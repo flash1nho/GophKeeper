@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/uuid"
 	"github.com/gorilla/securecookie"
 )
 
@@ -53,25 +52,14 @@ func (a *Authenticator) Authenticate(ctx context.Context, p AuthProvider) (conte
 
 	cookieValue, err := p.GetCookie(ctx, cookieName)
 
-	var userID string
-
 	if err != nil {
-		cookieData, err := a.createSignedCookie()
-
-		if err != nil {
-			return nil, err
-		}
-
-		userID = cookieData.userID
-		cookieValue = cookieData.cookieValue
+		return nil, err
 	}
 
-	if userID == "" {
-		userID, err = a.getUserIDFromCookie(cookieValue)
+	userID, err := a.getUserIDFromCookie(cookieValue)
 
-		if err != nil {
-			return nil, err
-		}
+	if err != nil {
+		return nil, err
 	}
 
 	p.SetCookie(ctx, cookieName, cookieValue)
@@ -79,20 +67,16 @@ func (a *Authenticator) Authenticate(ctx context.Context, p AuthProvider) (conte
 	return context.WithValue(ctx, userKey, userID), nil
 }
 
-func (a *Authenticator) createSignedCookie() (*CookieData, error) {
-	userID, err := GenerateUniqueUserID()
-
-	if err != nil {
-		return nil, err
-	}
-
+func (a *Authenticator) CreateSignedCookie(ctx context.Context, userID string, p AuthProvider) error {
 	cookieValue, err := a.cookieManager.Encode(cookieName, userID)
 
 	if err != nil {
-		return nil, fmt.Errorf("ошибка кодирования cookie: %w", err)
+		return fmt.Errorf("ошибка кодирования cookie: %w", err)
 	}
 
-	return &CookieData{userID: userID, cookieValue: cookieValue}, nil
+	p.SetCookie(ctx, cookieName, cookieValue)
+
+	return nil
 }
 
 func (a *Authenticator) getUserIDFromCookie(cookieValue string) (string, error) {
@@ -105,14 +89,4 @@ func (a *Authenticator) getUserIDFromCookie(cookieValue string) (string, error) 
 	}
 
 	return userID, nil
-}
-
-func GenerateUniqueUserID() (string, error) {
-	id, err := uuid.NewRandom()
-
-	if err != nil {
-		return "", fmt.Errorf("не удалось сгенерировать UUID: %w", err)
-	}
-
-	return id.String(), nil
 }

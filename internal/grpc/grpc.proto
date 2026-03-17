@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package grpc;
+
+option go_package = "grpc/grpc";
+
+service GophKeeperService {
+  rpc Register (UserRegisterRequest) returns (UserRegisterResponse);
+}
+
+message UserRegisterRequest {
+  string login = 1;
+  string password = 2;
+}
+
+message UserRegisterResponse {
+  string user_id = 1;
+}

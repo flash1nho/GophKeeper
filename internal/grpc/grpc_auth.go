@@ -42,3 +42,14 @@ func Auth(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc
 
 	return handler(ctx, req)
 }
+
+func CreateSignedCookie(ctx context.Context, userID string) error {
+	auth := authenticator.NewAuthenticator()
+	err := auth.CreateSignedCookie(ctx, userID, &grpcProvider{})
+
+	if err != nil {
+		return status.Error(codes.Internal, err.Error())
+	}
+
+	return nil
+}
