@@ -39,7 +39,6 @@ func runGrpcServer(ctx context.Context, s *Service) {
 
 	grpcServer := grpc.NewServer(
 		grpc.Creds(creds),
-		grpc.UnaryInterceptor(pb.Auth),
 	)
 
 	go func() {

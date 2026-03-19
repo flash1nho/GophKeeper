@@ -1,12 +1,12 @@
 package grpc
 
 import (
-	context "context"
+	"context"
 
-	grpc "google.golang.org/grpc"
-	codes "google.golang.org/grpc/codes"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
-	status "google.golang.org/grpc/status"
+	"google.golang.org/grpc/status"
 
 	"github.com/flash1nho/GophKeeper/internal/authenticator"
 )

@@ -7,11 +7,11 @@
 package grpc
 
 import (
-	reflect "reflect"
-	unsafe "unsafe"
-
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	reflect "reflect"
+	sync "sync"
+	unsafe "unsafe"
 )
 
 const (
@@ -22,9 +22,9 @@ const (
 )
 
 type UserRegisterRequest struct {
-	state         protoimpl.MessageState `protogen:"opaque.v1"`
-	Login         string                 `protobuf:"bytes,1,opt,name=login,proto3"`
-	Password      string                 `protobuf:"bytes,2,opt,name=password,proto3"`
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Login         string                 `protobuf:"bytes,1,opt,name=login,proto3" json:"login,omitempty"`
+	Password      string                 `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -54,6 +54,11 @@ func (x *UserRegisterRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
+// Deprecated: Use UserRegisterRequest.ProtoReflect.Descriptor instead.
+func (*UserRegisterRequest) Descriptor() ([]byte, []int) {
+	return file_internal_grpc_grpc_proto_rawDescGZIP(), []int{0}
+}
+
 func (x *UserRegisterRequest) GetLogin() string {
 	if x != nil {
 		return x.Login
@@ -68,33 +73,9 @@ func (x *UserRegisterRequest) GetPassword() string {
 	return ""
 }
 
-func (x *UserRegisterRequest) SetLogin(v string) {
-	x.Login = v
-}
-
-func (x *UserRegisterRequest) SetPassword(v string) {
-	x.Password = v
-}
-
-type UserRegisterRequest_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	Login    string
-	Password string
-}
-
-func (b0 UserRegisterRequest_builder) Build() *UserRegisterRequest {
-	m0 := &UserRegisterRequest{}
-	b, x := &b0, m0
-	_, _ = b, x
-	x.Login = b.Login
-	x.Password = b.Password
-	return m0
-}
-
 type UserRegisterResponse struct {
-	state         protoimpl.MessageState `protogen:"opaque.v1"`
-	UserID        string                 `protobuf:"varint,1,opt,name=user_id,json=userId,proto3"`
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserID        string                 `protobuf:"bytes,1,opt,name=user_id,json=UserID,proto3" json:"user_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -124,29 +105,16 @@ func (x *UserRegisterResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
+// Deprecated: Use UserRegisterResponse.ProtoReflect.Descriptor instead.
+func (*UserRegisterResponse) Descriptor() ([]byte, []int) {
+	return file_internal_grpc_grpc_proto_rawDescGZIP(), []int{1}
+}
+
 func (x *UserRegisterResponse) GetUserID() string {
 	if x != nil {
 		return x.UserID
 	}
 	return ""
-}
-
-func (x *UserRegisterResponse) SetUserID(v string) {
-	x.UserID = v
-}
-
-type UserRegisterResponse_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	UserID string
-}
-
-func (b0 UserRegisterResponse_builder) Build() *UserRegisterResponse {
-	m0 := &UserRegisterResponse{}
-	b, x := &b0, m0
-	_, _ = b, x
-	x.UserID = b.UserID
-	return m0
 }
 
 var File_internal_grpc_grpc_proto protoreflect.FileDescriptor
@@ -158,9 +126,21 @@ const file_internal_grpc_grpc_proto_rawDesc = "" +
 	"\x05login\x18\x01 \x01(\tR\x05login\x12\x1a\n" +
 	"\bpassword\x18\x02 \x01(\tR\bpassword\"/\n" +
 	"\x14UserRegisterResponse\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\x03R\x06userId2V\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06UserID2V\n" +
 	"\x11GophKeeperService\x12A\n" +
 	"\bRegister\x12\x19.grpc.UserRegisterRequest\x1a\x1a.grpc.UserRegisterResponseB\vZ\tgrpc/grpcb\x06proto3"
+
+var (
+	file_internal_grpc_grpc_proto_rawDescOnce sync.Once
+	file_internal_grpc_grpc_proto_rawDescData []byte
+)
+
+func file_internal_grpc_grpc_proto_rawDescGZIP() []byte {
+	file_internal_grpc_grpc_proto_rawDescOnce.Do(func() {
+		file_internal_grpc_grpc_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_internal_grpc_grpc_proto_rawDesc), len(file_internal_grpc_grpc_proto_rawDesc)))
+	})
+	return file_internal_grpc_grpc_proto_rawDescData
+}
 
 var file_internal_grpc_grpc_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_internal_grpc_grpc_proto_goTypes = []any{

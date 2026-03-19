@@ -26,6 +26,8 @@ func NewHandler(pool *pgxpool.Pool) *GrpcHandler {
 func (g *GrpcHandler) Register(ctx context.Context, req *UserRegisterRequest) (*UserRegisterResponse, error) {
 	var response UserRegisterResponse
 
+	fmt.Println(req.Login)
+
 	if req.Login == "" || req.Password == "" {
 		err := fmt.Errorf("введите логин и пароль")
 		return nil, err
