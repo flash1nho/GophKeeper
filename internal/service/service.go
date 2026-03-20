@@ -39,6 +39,7 @@ func runGrpcServer(ctx context.Context, s *Service) {
 
 	grpcServer := grpc.NewServer(
 		grpc.Creds(creds),
+		grpc.UnaryInterceptor(interceptorWithExclusions),
 	)
 
 	go func() {
@@ -89,4 +90,20 @@ func (s *Service) Run() {
 	s.gHandler.Pool.Close()
 
 	s.log.Info("Все серверы успешно завершили работу.")
+}
+
+func interceptorWithExclusions(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+	// Список методов, которые НЕ требуют авторизации
+	// Формат: /пакет.Сервис/Метод
+	publicMethods := map[string]bool{
+		"/grpc.GophKeeperService/Login":    true,
+		"/grpc.GophKeeperService/Register": true,
+	}
+
+	if publicMethods[info.FullMethod] {
+		return handler(ctx, req) // Пропускаем проверку токена
+	}
+
+	// Для всех остальных методов вызываем ваш стандартный pb.Auth
+	return pb.Auth(ctx, req, info, handler)
 }
