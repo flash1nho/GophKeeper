@@ -5,41 +5,30 @@ import (
 	"fmt"
 	"time"
 
-	pb "github.com/flash1nho/GophKeeper/internal/grpc"
-
-	"github.com/flash1nho/GophKeeper/internal/config"
-
-	"google.golang.org/grpc"
-
 	"github.com/spf13/cobra"
-)
 
-var (
-	login    string
-	password string
+	pb "github.com/flash1nho/GophKeeper/internal/grpc"
 )
 
 var registerCmd = &cobra.Command{
 	Use:   "register",
 	Short: "Регистрация нового пользователя в GophKeeper",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		conn, err := grpc.Dial(config.GrpcServerAddress, grpc.WithInsecure())
-
-		if err != nil {
-			return fmt.Errorf("не удалось подключиться: %v", err)
-		}
-
-		defer conn.Close()
-
-		client := pb.NewGophKeeperServiceClient(conn)
-
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-		defer cancel()
-
 		req := &pb.UserRegisterRequest{
 			Login:    login,
 			Password: password,
 		}
+
+		client, conn, err := PublicClient()
+
+		if err != nil {
+			return err
+		}
+
+		defer conn.Close()
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+		defer cancel()
 
 		resp, err := client.Register(ctx, req)
 
@@ -47,7 +36,7 @@ var registerCmd = &cobra.Command{
 			return fmt.Errorf("ошибка регистрации: %v", err)
 		}
 
-		fmt.Printf("Пользователь успешно зарегистрирован! ID: %s\n", resp.UserID)
+		fmt.Printf("Пользователь успешно зарегистрирован! Token: %s\n", resp.Token)
 
 		return nil
 	},

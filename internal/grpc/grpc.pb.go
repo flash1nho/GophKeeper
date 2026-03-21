@@ -76,7 +76,7 @@ func (x *UserRegisterRequest) GetPassword() string {
 
 type UserRegisterResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserID        string                 `protobuf:"bytes,1,opt,name=user_id,json=UserID,proto3" json:"user_id,omitempty"`
+	Token         string                 `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -111,9 +111,105 @@ func (*UserRegisterResponse) Descriptor() ([]byte, []int) {
 	return file_internal_grpc_grpc_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *UserRegisterResponse) GetUserID() string {
+func (x *UserRegisterResponse) GetToken() string {
 	if x != nil {
-		return x.UserID
+		return x.Token
+	}
+	return ""
+}
+
+type UserLoginRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Login         string                 `protobuf:"bytes,1,opt,name=login,proto3" json:"login,omitempty"`
+	Password      string                 `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UserLoginRequest) Reset() {
+	*x = UserLoginRequest{}
+	mi := &file_internal_grpc_grpc_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UserLoginRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UserLoginRequest) ProtoMessage() {}
+
+func (x *UserLoginRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_internal_grpc_grpc_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UserLoginRequest.ProtoReflect.Descriptor instead.
+func (*UserLoginRequest) Descriptor() ([]byte, []int) {
+	return file_internal_grpc_grpc_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *UserLoginRequest) GetLogin() string {
+	if x != nil {
+		return x.Login
+	}
+	return ""
+}
+
+func (x *UserLoginRequest) GetPassword() string {
+	if x != nil {
+		return x.Password
+	}
+	return ""
+}
+
+type UserLoginResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Token         string                 `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UserLoginResponse) Reset() {
+	*x = UserLoginResponse{}
+	mi := &file_internal_grpc_grpc_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UserLoginResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UserLoginResponse) ProtoMessage() {}
+
+func (x *UserLoginResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_internal_grpc_grpc_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UserLoginResponse.ProtoReflect.Descriptor instead.
+func (*UserLoginResponse) Descriptor() ([]byte, []int) {
+	return file_internal_grpc_grpc_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *UserLoginResponse) GetToken() string {
+	if x != nil {
+		return x.Token
 	}
 	return ""
 }
@@ -125,11 +221,18 @@ const file_internal_grpc_grpc_proto_rawDesc = "" +
 	"\x18internal/grpc/grpc.proto\x12\x04grpc\"G\n" +
 	"\x13UserRegisterRequest\x12\x14\n" +
 	"\x05login\x18\x01 \x01(\tR\x05login\x12\x1a\n" +
-	"\bpassword\x18\x02 \x01(\tR\bpassword\"/\n" +
-	"\x14UserRegisterResponse\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06UserID2V\n" +
-	"\x11GophKeeperService\x12A\n" +
-	"\bRegister\x12\x19.grpc.UserRegisterRequest\x1a\x1a.grpc.UserRegisterResponseB\vZ\tgrpc/grpcb\x06proto3"
+	"\bpassword\x18\x02 \x01(\tR\bpassword\",\n" +
+	"\x14UserRegisterResponse\x12\x14\n" +
+	"\x05token\x18\x01 \x01(\tR\x05token\"D\n" +
+	"\x10UserLoginRequest\x12\x14\n" +
+	"\x05login\x18\x01 \x01(\tR\x05login\x12\x1a\n" +
+	"\bpassword\x18\x02 \x01(\tR\bpassword\")\n" +
+	"\x11UserLoginResponse\x12\x14\n" +
+	"\x05token\x18\x01 \x01(\tR\x05token2\x96\x01\n" +
+	"\x17GophKeeperPublicService\x12A\n" +
+	"\bRegister\x12\x19.grpc.UserRegisterRequest\x1a\x1a.grpc.UserRegisterResponse\x128\n" +
+	"\x05Login\x12\x16.grpc.UserLoginRequest\x1a\x17.grpc.UserLoginResponse2\x1a\n" +
+	"\x18GophKeeperPrivateServiceB\vZ\tgrpc/grpcb\x06proto3"
 
 var (
 	file_internal_grpc_grpc_proto_rawDescOnce sync.Once
@@ -143,16 +246,20 @@ func file_internal_grpc_grpc_proto_rawDescGZIP() []byte {
 	return file_internal_grpc_grpc_proto_rawDescData
 }
 
-var file_internal_grpc_grpc_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_internal_grpc_grpc_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_internal_grpc_grpc_proto_goTypes = []any{
 	(*UserRegisterRequest)(nil),  // 0: grpc.UserRegisterRequest
 	(*UserRegisterResponse)(nil), // 1: grpc.UserRegisterResponse
+	(*UserLoginRequest)(nil),     // 2: grpc.UserLoginRequest
+	(*UserLoginResponse)(nil),    // 3: grpc.UserLoginResponse
 }
 var file_internal_grpc_grpc_proto_depIdxs = []int32{
-	0, // 0: grpc.GophKeeperService.Register:input_type -> grpc.UserRegisterRequest
-	1, // 1: grpc.GophKeeperService.Register:output_type -> grpc.UserRegisterResponse
-	1, // [1:2] is the sub-list for method output_type
-	0, // [0:1] is the sub-list for method input_type
+	0, // 0: grpc.GophKeeperPublicService.Register:input_type -> grpc.UserRegisterRequest
+	2, // 1: grpc.GophKeeperPublicService.Login:input_type -> grpc.UserLoginRequest
+	1, // 2: grpc.GophKeeperPublicService.Register:output_type -> grpc.UserRegisterResponse
+	3, // 3: grpc.GophKeeperPublicService.Login:output_type -> grpc.UserLoginResponse
+	2, // [2:4] is the sub-list for method output_type
+	0, // [0:2] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
 	0, // [0:0] is the sub-list for extension extendee
 	0, // [0:0] is the sub-list for field type_name
@@ -169,9 +276,9 @@ func file_internal_grpc_grpc_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_internal_grpc_grpc_proto_rawDesc), len(file_internal_grpc_grpc_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   4,
 			NumExtensions: 0,
-			NumServices:   1,
+			NumServices:   2,
 		},
 		GoTypes:           file_internal_grpc_grpc_proto_goTypes,
 		DependencyIndexes: file_internal_grpc_grpc_proto_depIdxs,

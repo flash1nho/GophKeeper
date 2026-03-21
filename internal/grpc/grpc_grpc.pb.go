@@ -20,103 +20,203 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	GophKeeperService_Register_FullMethodName = "/grpc.GophKeeperService/Register"
+	GophKeeperPublicService_Register_FullMethodName = "/grpc.GophKeeperPublicService/Register"
+	GophKeeperPublicService_Login_FullMethodName    = "/grpc.GophKeeperPublicService/Login"
 )
 
-// GophKeeperServiceClient is the client API for GophKeeperService service.
+// GophKeeperPublicServiceClient is the client API for GophKeeperPublicService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type GophKeeperServiceClient interface {
+type GophKeeperPublicServiceClient interface {
 	Register(ctx context.Context, in *UserRegisterRequest, opts ...grpc.CallOption) (*UserRegisterResponse, error)
+	Login(ctx context.Context, in *UserLoginRequest, opts ...grpc.CallOption) (*UserLoginResponse, error)
 }
 
-type gophKeeperServiceClient struct {
+type gophKeeperPublicServiceClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewGophKeeperServiceClient(cc grpc.ClientConnInterface) GophKeeperServiceClient {
-	return &gophKeeperServiceClient{cc}
+func NewGophKeeperPublicServiceClient(cc grpc.ClientConnInterface) GophKeeperPublicServiceClient {
+	return &gophKeeperPublicServiceClient{cc}
 }
 
-func (c *gophKeeperServiceClient) Register(ctx context.Context, in *UserRegisterRequest, opts ...grpc.CallOption) (*UserRegisterResponse, error) {
+func (c *gophKeeperPublicServiceClient) Register(ctx context.Context, in *UserRegisterRequest, opts ...grpc.CallOption) (*UserRegisterResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(UserRegisterResponse)
-	err := c.cc.Invoke(ctx, GophKeeperService_Register_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, GophKeeperPublicService_Register_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// GophKeeperServiceServer is the server API for GophKeeperService service.
-// All implementations must embed UnimplementedGophKeeperServiceServer
-// for forward compatibility.
-type GophKeeperServiceServer interface {
-	Register(context.Context, *UserRegisterRequest) (*UserRegisterResponse, error)
-	mustEmbedUnimplementedGophKeeperServiceServer()
+func (c *gophKeeperPublicServiceClient) Login(ctx context.Context, in *UserLoginRequest, opts ...grpc.CallOption) (*UserLoginResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UserLoginResponse)
+	err := c.cc.Invoke(ctx, GophKeeperPublicService_Login_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
-// UnimplementedGophKeeperServiceServer must be embedded to have
+// GophKeeperPublicServiceServer is the server API for GophKeeperPublicService service.
+// All implementations must embed UnimplementedGophKeeperPublicServiceServer
+// for forward compatibility.
+type GophKeeperPublicServiceServer interface {
+	Register(context.Context, *UserRegisterRequest) (*UserRegisterResponse, error)
+	Login(context.Context, *UserLoginRequest) (*UserLoginResponse, error)
+	mustEmbedUnimplementedGophKeeperPublicServiceServer()
+}
+
+// UnimplementedGophKeeperPublicServiceServer must be embedded to have
 // forward compatible implementations.
 //
 // NOTE: this should be embedded by value instead of pointer to avoid a nil
 // pointer dereference when methods are called.
-type UnimplementedGophKeeperServiceServer struct{}
+type UnimplementedGophKeeperPublicServiceServer struct{}
 
-func (UnimplementedGophKeeperServiceServer) Register(context.Context, *UserRegisterRequest) (*UserRegisterResponse, error) {
+func (UnimplementedGophKeeperPublicServiceServer) Register(context.Context, *UserRegisterRequest) (*UserRegisterResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Register not implemented")
 }
-func (UnimplementedGophKeeperServiceServer) mustEmbedUnimplementedGophKeeperServiceServer() {}
-func (UnimplementedGophKeeperServiceServer) testEmbeddedByValue()                           {}
+func (UnimplementedGophKeeperPublicServiceServer) Login(context.Context, *UserLoginRequest) (*UserLoginResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Login not implemented")
+}
+func (UnimplementedGophKeeperPublicServiceServer) mustEmbedUnimplementedGophKeeperPublicServiceServer() {
+}
+func (UnimplementedGophKeeperPublicServiceServer) testEmbeddedByValue() {}
 
-// UnsafeGophKeeperServiceServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to GophKeeperServiceServer will
+// UnsafeGophKeeperPublicServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to GophKeeperPublicServiceServer will
 // result in compilation errors.
-type UnsafeGophKeeperServiceServer interface {
-	mustEmbedUnimplementedGophKeeperServiceServer()
+type UnsafeGophKeeperPublicServiceServer interface {
+	mustEmbedUnimplementedGophKeeperPublicServiceServer()
 }
 
-func RegisterGophKeeperServiceServer(s grpc.ServiceRegistrar, srv GophKeeperServiceServer) {
-	// If the following call panics, it indicates UnimplementedGophKeeperServiceServer was
+func RegisterGophKeeperPublicServiceServer(s grpc.ServiceRegistrar, srv GophKeeperPublicServiceServer) {
+	// If the following call panics, it indicates UnimplementedGophKeeperPublicServiceServer was
 	// embedded by pointer and is nil.  This will cause panics if an
 	// unimplemented method is ever invoked, so we test this at initialization
 	// time to prevent it from happening at runtime later due to I/O.
 	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
 		t.testEmbeddedByValue()
 	}
-	s.RegisterService(&GophKeeperService_ServiceDesc, srv)
+	s.RegisterService(&GophKeeperPublicService_ServiceDesc, srv)
 }
 
-func _GophKeeperService_Register_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _GophKeeperPublicService_Register_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(UserRegisterRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(GophKeeperServiceServer).Register(ctx, in)
+		return srv.(GophKeeperPublicServiceServer).Register(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: GophKeeperService_Register_FullMethodName,
+		FullMethod: GophKeeperPublicService_Register_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GophKeeperServiceServer).Register(ctx, req.(*UserRegisterRequest))
+		return srv.(GophKeeperPublicServiceServer).Register(ctx, req.(*UserRegisterRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-// GophKeeperService_ServiceDesc is the grpc.ServiceDesc for GophKeeperService service.
+func _GophKeeperPublicService_Login_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UserLoginRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GophKeeperPublicServiceServer).Login(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GophKeeperPublicService_Login_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GophKeeperPublicServiceServer).Login(ctx, req.(*UserLoginRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// GophKeeperPublicService_ServiceDesc is the grpc.ServiceDesc for GophKeeperPublicService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var GophKeeperService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "grpc.GophKeeperService",
-	HandlerType: (*GophKeeperServiceServer)(nil),
+var GophKeeperPublicService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "grpc.GophKeeperPublicService",
+	HandlerType: (*GophKeeperPublicServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
 			MethodName: "Register",
-			Handler:    _GophKeeperService_Register_Handler,
+			Handler:    _GophKeeperPublicService_Register_Handler,
+		},
+		{
+			MethodName: "Login",
+			Handler:    _GophKeeperPublicService_Login_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "internal/grpc/grpc.proto",
+}
+
+// GophKeeperPrivateServiceClient is the client API for GophKeeperPrivateService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type GophKeeperPrivateServiceClient interface {
+}
+
+type gophKeeperPrivateServiceClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewGophKeeperPrivateServiceClient(cc grpc.ClientConnInterface) GophKeeperPrivateServiceClient {
+	return &gophKeeperPrivateServiceClient{cc}
+}
+
+// GophKeeperPrivateServiceServer is the server API for GophKeeperPrivateService service.
+// All implementations must embed UnimplementedGophKeeperPrivateServiceServer
+// for forward compatibility.
+type GophKeeperPrivateServiceServer interface {
+	mustEmbedUnimplementedGophKeeperPrivateServiceServer()
+}
+
+// UnimplementedGophKeeperPrivateServiceServer must be embedded to have
+// forward compatible implementations.
+//
+// NOTE: this should be embedded by value instead of pointer to avoid a nil
+// pointer dereference when methods are called.
+type UnimplementedGophKeeperPrivateServiceServer struct{}
+
+func (UnimplementedGophKeeperPrivateServiceServer) mustEmbedUnimplementedGophKeeperPrivateServiceServer() {
+}
+func (UnimplementedGophKeeperPrivateServiceServer) testEmbeddedByValue() {}
+
+// UnsafeGophKeeperPrivateServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to GophKeeperPrivateServiceServer will
+// result in compilation errors.
+type UnsafeGophKeeperPrivateServiceServer interface {
+	mustEmbedUnimplementedGophKeeperPrivateServiceServer()
+}
+
+func RegisterGophKeeperPrivateServiceServer(s grpc.ServiceRegistrar, srv GophKeeperPrivateServiceServer) {
+	// If the following call panics, it indicates UnimplementedGophKeeperPrivateServiceServer was
+	// embedded by pointer and is nil.  This will cause panics if an
+	// unimplemented method is ever invoked, so we test this at initialization
+	// time to prevent it from happening at runtime later due to I/O.
+	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
+		t.testEmbeddedByValue()
+	}
+	s.RegisterService(&GophKeeperPrivateService_ServiceDesc, srv)
+}
+
+// GophKeeperPrivateService_ServiceDesc is the grpc.ServiceDesc for GophKeeperPrivateService service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var GophKeeperPrivateService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "grpc.GophKeeperPrivateService",
+	HandlerType: (*GophKeeperPrivateServiceServer)(nil),
+	Methods:     []grpc.MethodDesc{},
+	Streams:     []grpc.StreamDesc{},
+	Metadata:    "internal/grpc/grpc.proto",
 }

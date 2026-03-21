@@ -7,9 +7,13 @@ import (
 	"github.com/flash1nho/GophKeeper/internal/db"
 	"github.com/flash1nho/GophKeeper/internal/grpc"
 	"github.com/flash1nho/GophKeeper/internal/service"
+
+	"github.com/flash1nho/GophKeeper/pkg/version"
 )
 
 func main() {
+	fmt.Println(version.Info())
+
 	settings := config.Settings()
 	pool, err := db.NewDB(settings.DatabaseURI)
 
@@ -17,6 +21,6 @@ func main() {
 		settings.Log.Error(fmt.Sprint(err))
 	}
 
-	gh := grpc.NewHandler(pool)
+	gh := grpc.NewGrpcHandler(pool, settings.Log)
 	service.NewService(gh, settings).Run()
 }

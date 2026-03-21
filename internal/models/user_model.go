@@ -3,7 +3,6 @@ package models
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/Masterminds/squirrel"
@@ -36,14 +35,12 @@ func UserRegister(ctx context.Context, login string, password string, pool *pgxp
 		ToSql()
 
 	if err != nil {
-		fmt.Println(err)
 		return 0, err
 	}
 
 	err = pool.QueryRow(ctx, sql, args...).Scan(&user.ID)
 
 	if err != nil {
-		fmt.Println(err)
 		var pgErr *pgconn.PgError
 
 		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {

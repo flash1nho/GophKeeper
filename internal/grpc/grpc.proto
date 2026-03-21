@@ -4,8 +4,9 @@ package grpc;
 
 option go_package = "grpc/grpc";
 
-service GophKeeperService {
+service GophKeeperPublicService {
   rpc Register (UserRegisterRequest) returns (UserRegisterResponse);
+  rpc Login (UserLoginRequest) returns (UserLoginResponse);
 }
 
 message UserRegisterRequest {
@@ -14,5 +15,16 @@ message UserRegisterRequest {
 }
 
 message UserRegisterResponse {
-  string user_id = 1;
+  string token = 1;
 }
+
+message UserLoginRequest {
+  string login = 1;
+  string password = 2;
+}
+
+message UserLoginResponse {
+  string token = 1;
+}
+
+service GophKeeperPrivateService {}

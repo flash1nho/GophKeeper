@@ -1,65 +1,22 @@
 package grpc
 
 import (
-	"context"
-	"fmt"
-	"strconv"
-
 	"github.com/jackc/pgx/v5/pgxpool"
-
-	"github.com/flash1nho/GophKeeper/internal/authenticator"
-	"github.com/flash1nho/GophKeeper/internal/models"
+	"go.uber.org/zap"
 )
 
 type GrpcHandler struct {
-	UnimplementedGophKeeperServiceServer
-
-	Pool *pgxpool.Pool
+	GrpcPublicHandler  *GrpcPublicHandler
+	GrpcPrivateHandler *GrpcPrivateHandler
+	Pool               *pgxpool.Pool
+	Log                *zap.Logger
 }
 
-func NewHandler(pool *pgxpool.Pool) *GrpcHandler {
+func NewGrpcHandler(pool *pgxpool.Pool, log *zap.Logger) *GrpcHandler {
 	return &GrpcHandler{
-		Pool: pool,
+		GrpcPublicHandler:  &GrpcPublicHandler{Pool: pool, Log: log},
+		GrpcPrivateHandler: &GrpcPrivateHandler{Pool: pool, Log: log},
+		Pool:               pool,
+		Log:                log,
 	}
-}
-
-func (g *GrpcHandler) Register(ctx context.Context, req *UserRegisterRequest) (*UserRegisterResponse, error) {
-	var response UserRegisterResponse
-
-	if req.Login == "" || req.Password == "" {
-		err := fmt.Errorf("введите логин и пароль")
-		return nil, err
-	}
-
-	userID, err := models.UserRegister(ctx, req.Login, req.Password, g.Pool)
-
-	if err != nil {
-		return nil, err
-	}
-
-	if userID == 0 {
-		err = fmt.Errorf("логин уже занят")
-		return nil, err
-	}
-
-	strUserID := strconv.Itoa(userID)
-	err = CreateSignedCookie(ctx, strUserID)
-
-	if err != nil {
-		return nil, err
-	}
-
-	response.UserID = strUserID
-
-	return &response, nil
-}
-
-func getUserFromContext(ctx context.Context) (string, error) {
-	userID, err := authenticator.FromContext(ctx)
-
-	if err != nil {
-		return "", nil
-	}
-
-	return userID, nil
 }

@@ -1,15 +1,26 @@
 package cmd
 
 import (
-	"github.com/flash1nho/GophKeeper/pkg/version"
-
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
+
+	"github.com/flash1nho/GophKeeper/pkg/version"
+)
+
+var (
+	buildVersion string = "N/A"
+	buildCommit  string = "N/A"
+	buildDate    string = "N/A"
+)
+
+var (
+	login    string
+	password string
 )
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:     "gophkeeper-cli",
+	Use:     "gophkeeper",
 	Short:   "GophKeeper client",
 	Version: version.Info(),
 }
@@ -23,5 +34,5 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringP("grpc-server-address", "g", "", "gRPC server address")
+	// TODO
 }

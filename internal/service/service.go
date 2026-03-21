@@ -11,10 +11,14 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	pb "github.com/flash1nho/GophKeeper/internal/grpc"
+	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/flash1nho/GophKeeper/internal/config"
+	"github.com/flash1nho/GophKeeper/internal/interceptors"
+	"google.golang.org/grpc/credentials"
+
+	"github.com/flash1nho/GophKeeper/certs"
 
 	"go.uber.org/zap"
 )
@@ -35,18 +39,31 @@ func NewService(gHandler *pb.GrpcHandler, settings config.SettingsObject) *Servi
 
 func runGrpcServer(ctx context.Context, s *Service) {
 	serverErr := make(chan error, 1)
-	creds := insecure.NewCredentials()
+	certs, err := certs.NewCerts("server")
+
+	if err != nil {
+		s.log.Error("Сертификаты не найдены", zap.Error(err))
+	}
+
+	creds, err := credentials.NewServerTLSFromFile(certs.Cert, certs.Key)
+
+	if err != nil {
+		s.log.Error("Не удалось настроить TLS", zap.Error(err))
+	}
+
+	loggingInterceptor := logging.UnaryServerInterceptor(interceptors.InterceptorLogger(s.log))
 
 	grpcServer := grpc.NewServer(
 		grpc.Creds(creds),
-		grpc.UnaryInterceptor(interceptorWithExclusions),
+		grpc.ChainUnaryInterceptor(loggingInterceptor),
 	)
 
 	go func() {
 		listen, err := net.Listen("tcp", s.GrpcServerAddress)
 
 		if err == nil {
-			pb.RegisterGophKeeperServiceServer(grpcServer, s.gHandler)
+			pb.RegisterGophKeeperPublicServiceServer(grpcServer, s.gHandler.GrpcPublicHandler)
+			pb.RegisterGophKeeperPrivateServiceServer(grpcServer, s.gHandler.GrpcPrivateHandler)
 
 			s.log.Info("сервер gRPC начал работу")
 
@@ -90,20 +107,4 @@ func (s *Service) Run() {
 	s.gHandler.Pool.Close()
 
 	s.log.Info("Все серверы успешно завершили работу.")
-}
-
-func interceptorWithExclusions(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-	// Список методов, которые НЕ требуют авторизации
-	// Формат: /пакет.Сервис/Метод
-	publicMethods := map[string]bool{
-		"/grpc.GophKeeperService/Login":    true,
-		"/grpc.GophKeeperService/Register": true,
-	}
-
-	if publicMethods[info.FullMethod] {
-		return handler(ctx, req) // Пропускаем проверку токена
-	}
-
-	// Для всех остальных методов вызываем ваш стандартный pb.Auth
-	return pb.Auth(ctx, req, info, handler)
 }

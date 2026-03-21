@@ -3,41 +3,31 @@ package authenticator
 import (
 	"context"
 	"fmt"
+	"time"
 
-	"github.com/gorilla/securecookie"
+	"github.com/golang-jwt/jwt"
 )
-
-const cookieName = "user_session_id"
 
 type UserID string
 
 const userKey = UserID("userID")
 
-type Authenticator struct {
-	cookieManager *securecookie.SecureCookie
-}
-
-type CookieData struct {
-	userID      string
-	cookieValue string
-}
+type Authenticator struct{}
 
 func NewAuthenticator() *Authenticator {
-	return &Authenticator{
-		cookieManager: securecookie.New(securecookie.GenerateRandomKey(32), nil),
-	}
+	return &Authenticator{}
 }
 
 type AuthProvider interface {
-	GetCookie(ctx context.Context, name string) (string, error)
-	SetCookie(ctx context.Context, name string, value string) error
+	SetToken(ctx context.Context, UserID int) error
+	ParseToken(ctx context.Context, token string) error
 }
 
-func FromContext(ctx context.Context) (string, error) {
-	userID, ok := ctx.Value(userKey).(string)
+func FromContext(ctx context.Context) (int, error) {
+	userID, ok := ctx.Value(userKey).(int)
 
 	if !ok {
-		return "", fmt.Errorf("userID не найден в контексте")
+		return 0, fmt.Errorf("userID не найден в контексте")
 	}
 
 	return userID, nil
@@ -47,46 +37,37 @@ func GetUserKey() UserID {
 	return userKey
 }
 
-func (a *Authenticator) Authenticate(ctx context.Context, p AuthProvider) (context.Context, error) {
-	var cookieValue string
+func (a *Authenticator) Authenticate(ctx context.Context, provider AuthProvider) (context.Context, error) {
+	// TODO
+	// value, err := provider.parseToken(ctx)
 
-	cookieValue, err := p.GetCookie(ctx, cookieName)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	if err != nil {
-		return nil, err
-	}
+	// userID, err := a.(value)
 
-	userID, err := a.getUserIDFromCookie(cookieValue)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	if err != nil {
-		return nil, err
-	}
+	// p.SetToken(ctx, value)
 
-	p.SetCookie(ctx, cookieName, cookieValue)
-
-	return context.WithValue(ctx, userKey, userID), nil
+	// return context.WithValue(ctx, userKey, userID), nil
+	return ctx, nil
 }
 
-func (a *Authenticator) CreateSignedCookie(ctx context.Context, userID string, p AuthProvider) error {
-	cookieValue, err := a.cookieManager.Encode(cookieName, userID)
+func (a *Authenticator) CreateToken(UserID int) (string, error) {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"sub": UserID,
+		"exp": time.Now().Add(time.Hour).Unix(),
+	})
+
+	tokenString, err := token.SignedString([]byte("your-secret-key"))
 
 	if err != nil {
-		return fmt.Errorf("ошибка кодирования cookie: %w", err)
+		return "", err
 	}
 
-	p.SetCookie(ctx, cookieName, cookieValue)
-
-	return nil
-}
-
-func (a *Authenticator) getUserIDFromCookie(cookieValue string) (string, error) {
-	var userID string
-
-	err := a.cookieManager.Decode(cookieName, cookieValue, &userID)
-
-	if err != nil {
-		return "", fmt.Errorf("ошибка декодирования cookie: %w", err)
-	}
-
-	return userID, nil
+	return tokenString, nil
 }
