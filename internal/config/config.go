@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	DatabaseURI       = "postgres://gophkeeper:gophkeeper@localhost:5433/gophkeeper?sslmode=disable"
+	DatabaseURI       = "postgres://gophkeeper:gophkeeper@localhost:5434/gophkeeper?sslmode=disable"
 	CryptoKey         = "NzFKH^>h*a{pkCom"
 	GrpcServerAddress = "localhost:3200"
 )

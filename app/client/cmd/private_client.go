@@ -5,14 +5,14 @@ import (
 	"google.golang.org/grpc"
 )
 
-func PublicClient() (pb.GophKeeperPublicServiceClient, *grpc.ClientConn, error) {
+func PrivateClient() (pb.GophKeeperPrivateServiceClient, *grpc.ClientConn, error) {
 	conn, err := BaseConnection()
 
 	if err != nil {
 		return nil, nil, err
 	}
 
-	client := pb.NewGophKeeperPublicServiceClient(conn)
+	client := pb.NewGophKeeperPrivateServiceClient(conn)
 
 	return client, conn, nil
 }
