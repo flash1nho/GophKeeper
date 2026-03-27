@@ -8,24 +8,17 @@ import (
 	"github.com/spf13/cobra"
 
 	pb "github.com/flash1nho/GophKeeper/internal/grpc"
+	"google.golang.org/grpc/status"
 )
 
 var loginCmd = &cobra.Command{
 	Use:   "login",
-	Short: "Авторизация пользователя в GophKeeper",
-	RunE: func(cmd *cobra.Command, args []string) error {
+	Short: "Авторизация пользователя",
+	Run: func(cmd *cobra.Command, args []string) {
 		req := &pb.UserLoginRequest{
 			Login:    login,
 			Password: password,
 		}
-
-		client, conn, err := PublicClient()
-
-		if err != nil {
-			return err
-		}
-
-		defer conn.Close()
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 		defer cancel()
@@ -33,17 +26,21 @@ var loginCmd = &cobra.Command{
 		resp, err := client.Login(ctx, req)
 
 		if err != nil {
-			return fmt.Errorf("ошибка авторизации: %v", err)
+			if s, ok := status.FromError(err); ok {
+				fmt.Printf("Ошибка авторизации: %s\n", s.Message())
+			} else {
+				fmt.Printf("Неизвестная ошибка: %v", err)
+			}
+
+			return
 		}
 
-		fmt.Printf("Пользователь успешно авторизован! Token: %s\n", resp.Token)
-
-		return nil
+		fmt.Printf("Пользователь успешно авторизован!\n\nToken: %s\n", resp.Token)
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(loginCmd)
+	usersCmd.AddCommand(loginCmd)
 
 	loginCmd.Flags().StringVarP(&login, "login", "l", "", "login пользователя (обязательно)")
 	loginCmd.Flags().StringVarP(&password, "password", "p", "", "login (обязательно)")

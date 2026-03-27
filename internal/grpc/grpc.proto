@@ -27,4 +27,15 @@ message UserLoginResponse {
   string token = 1;
 }
 
-service GophKeeperPrivateService {}
+service GophKeeperPrivateService {
+  rpc TextNoteCreate (TextNoteCreateRequest) returns (CreateResponse);
+}
+
+message TextNoteCreateRequest {
+  string token = 1;
+  string content = 2;
+}
+
+message CreateResponse {
+  uint32 id = 1;
+}

@@ -160,10 +160,15 @@ var GophKeeperPublicService_ServiceDesc = grpc.ServiceDesc{
 	Metadata: "internal/grpc/grpc.proto",
 }
 
+const (
+	GophKeeperPrivateService_TextNoteCreate_FullMethodName = "/grpc.GophKeeperPrivateService/TextNoteCreate"
+)
+
 // GophKeeperPrivateServiceClient is the client API for GophKeeperPrivateService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type GophKeeperPrivateServiceClient interface {
+	TextNoteCreate(ctx context.Context, in *TextNoteCreateRequest, opts ...grpc.CallOption) (*CreateResponse, error)
 }
 
 type gophKeeperPrivateServiceClient struct {
@@ -174,10 +179,21 @@ func NewGophKeeperPrivateServiceClient(cc grpc.ClientConnInterface) GophKeeperPr
 	return &gophKeeperPrivateServiceClient{cc}
 }
 
+func (c *gophKeeperPrivateServiceClient) TextNoteCreate(ctx context.Context, in *TextNoteCreateRequest, opts ...grpc.CallOption) (*CreateResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateResponse)
+	err := c.cc.Invoke(ctx, GophKeeperPrivateService_TextNoteCreate_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // GophKeeperPrivateServiceServer is the server API for GophKeeperPrivateService service.
 // All implementations must embed UnimplementedGophKeeperPrivateServiceServer
 // for forward compatibility.
 type GophKeeperPrivateServiceServer interface {
+	TextNoteCreate(context.Context, *TextNoteCreateRequest) (*CreateResponse, error)
 	mustEmbedUnimplementedGophKeeperPrivateServiceServer()
 }
 
@@ -188,6 +204,9 @@ type GophKeeperPrivateServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedGophKeeperPrivateServiceServer struct{}
 
+func (UnimplementedGophKeeperPrivateServiceServer) TextNoteCreate(context.Context, *TextNoteCreateRequest) (*CreateResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method TextNoteCreate not implemented")
+}
 func (UnimplementedGophKeeperPrivateServiceServer) mustEmbedUnimplementedGophKeeperPrivateServiceServer() {
 }
 func (UnimplementedGophKeeperPrivateServiceServer) testEmbeddedByValue() {}
@@ -210,13 +229,36 @@ func RegisterGophKeeperPrivateServiceServer(s grpc.ServiceRegistrar, srv GophKee
 	s.RegisterService(&GophKeeperPrivateService_ServiceDesc, srv)
 }
 
+func _GophKeeperPrivateService_TextNoteCreate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TextNoteCreateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GophKeeperPrivateServiceServer).TextNoteCreate(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GophKeeperPrivateService_TextNoteCreate_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GophKeeperPrivateServiceServer).TextNoteCreate(ctx, req.(*TextNoteCreateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // GophKeeperPrivateService_ServiceDesc is the grpc.ServiceDesc for GophKeeperPrivateService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var GophKeeperPrivateService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "grpc.GophKeeperPrivateService",
 	HandlerType: (*GophKeeperPrivateServiceServer)(nil),
-	Methods:     []grpc.MethodDesc{},
-	Streams:     []grpc.StreamDesc{},
-	Metadata:    "internal/grpc/grpc.proto",
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "TextNoteCreate",
+			Handler:    _GophKeeperPrivateService_TextNoteCreate_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "internal/grpc/grpc.proto",
 }

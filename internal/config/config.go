@@ -1,19 +1,16 @@
 package config
 
 import (
+	"os"
+
 	"github.com/flash1nho/GophKeeper/internal/logger"
 
+	"github.com/joho/godotenv"
 	"go.uber.org/zap"
 )
 
-const (
-	DatabaseURI       = "postgres://gophkeeper:gophkeeper@localhost:5434/gophkeeper?sslmode=disable"
-	CryptoKey         = "NzFKH^>h*a{pkCom"
-	GrpcServerAddress = "localhost:3200"
-)
-
 type SettingsObject struct {
-	DatabaseURI       string
+	DatabaseDSN       string
 	CryptoKey         string
 	GrpcServerAddress string
 	Log               *zap.Logger
@@ -22,10 +19,16 @@ type SettingsObject struct {
 func Settings() SettingsObject {
 	logger.Initialize("info")
 
+	err := godotenv.Load()
+
+	if err != nil {
+		logger.Log.Fatal("Ошибка загрузки .env файла")
+	}
+
 	return SettingsObject{
-		DatabaseURI:       DatabaseURI,
-		CryptoKey:         CryptoKey,
-		GrpcServerAddress: GrpcServerAddress,
+		DatabaseDSN:       os.Getenv("DATABASE_DSN"),
+		GrpcServerAddress: os.Getenv("GRPC_SERVER_ADDRESS"),
+		CryptoKey:         os.Getenv("CRYPTO_KEY"),
 		Log:               logger.Log,
 	}
 }

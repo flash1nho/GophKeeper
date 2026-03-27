@@ -14,6 +14,7 @@ import (
 )
 
 func BaseConnection() (*grpc.ClientConn, error) {
+	settings := config.Settings()
 	certs, err := certs.NewCerts("client")
 
 	if err != nil {
@@ -23,19 +24,19 @@ func BaseConnection() (*grpc.ClientConn, error) {
 	clientCert, err := tls.LoadX509KeyPair(certs.Cert, certs.Key)
 
 	if err != nil {
-		return nil, nil, fmt.Errorf("не удалось загрузить сертификат клиента: %v", err)
+		return nil, fmt.Errorf("не удалось загрузить сертификат клиента: %v", err)
 	}
 
 	certCA, err := ioutil.ReadFile(certs.CertCA)
 
 	if err != nil {
-		return nil, nil, fmt.Errorf("не удалось прочитать CA сертификат: %v", err)
+		return nil, fmt.Errorf("не удалось прочитать CA сертификат: %v", err)
 	}
 
 	certPool := x509.NewCertPool()
 
 	if !certPool.AppendCertsFromPEM(certCA) {
-		return nil, nil, fmt.Errorf("не удалось добавить CA сертификат: %v", err)
+		return nil, fmt.Errorf("не удалось добавить CA сертификат: %v", err)
 	}
 
 	tlsConfig := &tls.Config{
@@ -44,9 +45,11 @@ func BaseConnection() (*grpc.ClientConn, error) {
 	}
 
 	creds := credentials.NewTLS(tlsConfig)
-	conn, err := grpc.Dial(config.GrpcServerAddress, grpc.WithTransportCredentials(creds))
+	conn, err := grpc.Dial(settings.GrpcServerAddress, grpc.WithTransportCredentials(creds))
 
 	if err != nil {
 		return nil, fmt.Errorf("не удалось подключиться: %v", err)
 	}
+
+	return conn, err
 }

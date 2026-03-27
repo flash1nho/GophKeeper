@@ -6,7 +6,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/flash1nho/GophKeeper/internal/models"
+	"github.com/flash1nho/GophKeeper/internal/models/users"
 	"go.uber.org/zap"
 )
 
@@ -24,7 +24,7 @@ func (g *GrpcPublicHandler) Register(ctx context.Context, req *UserRegisterReque
 		return nil, fmt.Errorf("введите логин и пароль")
 	}
 
-	userID, err := models.UserRegister(ctx, req.Login, req.Password, g.Pool)
+	userID, err := users.Register(ctx, req.Login, req.Password, g.Pool)
 
 	if err != nil {
 		return nil, err
@@ -52,14 +52,14 @@ func (g *GrpcPublicHandler) Login(ctx context.Context, req *UserLoginRequest) (*
 		return nil, fmt.Errorf("введите логин и пароль")
 	}
 
-	userID, err := models.UserLogin(ctx, req.Login, req.Password, g.Pool)
+	userID, err := users.Login(ctx, req.Login, req.Password, g.Pool)
 
 	if err != nil {
 		return nil, err
 	}
 
 	if userID == 0 {
-		return nil, fmt.Errorf("неверная пара логин/пароль")
+		return nil, fmt.Errorf("неверная логин или пароль")
 	}
 
 	token, err := CreateTokenFor(userID)
