@@ -3,9 +3,11 @@ package users
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/Masterminds/squirrel"
+	"github.com/golang-jwt/jwt"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -16,58 +18,91 @@ type User struct {
 	ID       int
 	Login    string
 	Password string
+	Secret   string
 }
 
-func Register(ctx context.Context, login string, password string, pool *pgxpool.Pool) (int, error) {
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+func NewUser(login string, password string) *User {
+	return &User{
+		Login:    login,
+		Password: password,
+	}
+}
 
-	if err != nil {
-		return 0, err
+func (user *User) UserRegister(ctx context.Context, pool *pgxpool.Pool) (string, error) {
+	if user.Login == "" || user.Password == "" {
+		return "", fmt.Errorf("введите логин и пароль")
 	}
 
-	var user User
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 
-	sql, args, err := squirrel.Insert("users").
+	if err != nil {
+		return "", err
+	}
+
+	query, args, err := squirrel.Insert("users").
 		Columns("login", "password", "created_at").
-		Values(login, hashedPassword, time.Now().UTC()).
+		Values(user.Login, hashedPassword, time.Now().UTC()).
 		Suffix("RETURNING id").
 		PlaceholderFormat(squirrel.Dollar).
 		ToSql()
 
 	if err != nil {
-		return 0, err
+		return "", err
 	}
 
-	err = pool.QueryRow(ctx, sql, args...).Scan(&user.ID)
+	err = pool.QueryRow(ctx, query, args...).Scan(&user.ID)
 
 	if err != nil {
 		var pgErr *pgconn.PgError
 
 		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
-			return 0, nil
+			return "", fmt.Errorf("логин уже существует")
 		}
 
-		return 0, err
+		return "", err
 	}
 
-	return user.ID, nil
+	return user.createToken()
 }
 
-func Login(ctx context.Context, login string, password string, pool *pgxpool.Pool) (int, error) {
-	var user User
+func (user *User) UserLogin(ctx context.Context, pool *pgxpool.Pool) (string, error) {
+	if user.Login == "" || user.Password == "" {
+		return "", fmt.Errorf("введите логин и пароль")
+	}
 
-	query := `SELECT id, password FROM users WHERE users.login = $1`
-	err := pool.QueryRow(ctx, query, login).Scan(&user.ID, &user.Password)
+	password := user.Password
+
+	query, args, err := squirrel.Select("id", "password").
+		From("users").
+		Where(squirrel.Eq{"login": user.Login}).
+		PlaceholderFormat(squirrel.Dollar).
+		ToSql()
 
 	if err != nil {
-		return 0, err
+		return "", err
+	}
+
+	err = pool.QueryRow(ctx, query, args...).Scan(&user.ID, &user.Password)
+
+	if err != nil {
+		return "", fmt.Errorf("Пользователь не найден")
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
-
 	if err != nil {
-		return 0, nil
+		return "", fmt.Errorf("Неверный пароль")
 	}
 
-	return user.ID, nil
+	return user.createToken()
+}
+
+func (user *User) createToken() (string, error) {
+	claims := jwt.MapClaims{
+		"user_id": user.ID,
+		"exp":     time.Now().Add(time.Hour * 24).Unix(),
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	return token.SignedString([]byte(user.Secret))
 }

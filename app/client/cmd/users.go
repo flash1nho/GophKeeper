@@ -6,12 +6,14 @@ import (
 	"github.com/spf13/cobra"
 
 	pb "github.com/flash1nho/GophKeeper/internal/grpc"
-	"google.golang.org/grpc"
+
+	"github.com/flash1nho/GophKeeper/app/client/cmd/users"
 )
 
 var (
-	conn   grpc.ClientConn
-	client pb.GophKeeperPublicServiceClient
+	client   pb.GophKeeperPublicServiceClient
+	login    string
+	password string
 )
 
 var usersCmd = &cobra.Command{
@@ -25,13 +27,24 @@ var usersCmd = &cobra.Command{
 		}
 
 		client = pb.NewGophKeeperPublicServiceClient(conn)
-
-		if err != nil {
-			log.Fatal().Err(err)
-		}
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(usersCmd)
+
+	registerCmd := users.NewRegisterCmd(&client)
+	registerCmd.Flags().StringVarP(&login, "login", "l", "", "Логин пользователя (обязательно)")
+	registerCmd.Flags().StringVarP(&password, "password", "p", "", "Пароль пользователя (обязательно)")
+	registerCmd.MarkFlagRequired("login")
+	registerCmd.MarkFlagRequired("password")
+
+	loginCmd := users.NewLoginCmd(&client)
+	loginCmd.Flags().StringVarP(&login, "login", "l", "", "Логин пользователя (обязательно)")
+	loginCmd.Flags().StringVarP(&password, "password", "p", "", "Пароль пользователя (обязательно)")
+	loginCmd.MarkFlagRequired("login")
+	loginCmd.MarkFlagRequired("password")
+
+	usersCmd.AddCommand(registerCmd)
+	usersCmd.AddCommand(loginCmd)
 }

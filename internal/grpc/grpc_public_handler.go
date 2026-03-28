@@ -2,7 +2,6 @@ package grpc
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -20,21 +19,8 @@ type GrpcPublicHandler struct {
 func (g *GrpcPublicHandler) Register(ctx context.Context, req *UserRegisterRequest) (*UserRegisterResponse, error) {
 	var response UserRegisterResponse
 
-	if req.Login == "" || req.Password == "" {
-		return nil, fmt.Errorf("введите логин и пароль")
-	}
-
-	userID, err := users.Register(ctx, req.Login, req.Password, g.Pool)
-
-	if err != nil {
-		return nil, err
-	}
-
-	if userID == 0 {
-		return nil, fmt.Errorf("логин уже занят")
-	}
-
-	token, err := CreateTokenFor(userID)
+	user := users.NewUser(req.Login, req.Password)
+	token, err := user.UserRegister(ctx, g.Pool)
 
 	if err != nil {
 		return nil, err
@@ -48,21 +34,8 @@ func (g *GrpcPublicHandler) Register(ctx context.Context, req *UserRegisterReque
 func (g *GrpcPublicHandler) Login(ctx context.Context, req *UserLoginRequest) (*UserLoginResponse, error) {
 	var response UserLoginResponse
 
-	if req.Login == "" || req.Password == "" {
-		return nil, fmt.Errorf("введите логин и пароль")
-	}
-
-	userID, err := users.Login(ctx, req.Login, req.Password, g.Pool)
-
-	if err != nil {
-		return nil, err
-	}
-
-	if userID == 0 {
-		return nil, fmt.Errorf("неверная логин или пароль")
-	}
-
-	token, err := CreateTokenFor(userID)
+	user := users.NewUser(req.Login, req.Password)
+	token, err := user.UserLogin(ctx, g.Pool)
 
 	if err != nil {
 		return nil, err

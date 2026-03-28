@@ -16,12 +16,6 @@ type BaseSecret struct {
 	CreatedAt time.Time
 }
 
-type TextNote struct {
-	BaseSecret
-
-	Content string
-}
-
 type Secret interface {
 	GetBaseSecret() *BaseSecret
 	GetType() string

@@ -4,6 +4,12 @@ import (
 	"fmt"
 )
 
+type TextNote struct {
+	BaseSecret
+
+	Content string
+}
+
 func NewTextNote(userID int, content string) *TextNote {
 	return &TextNote{
 		BaseSecret: BaseSecret{UserID: userID},
