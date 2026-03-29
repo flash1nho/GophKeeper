@@ -3,19 +3,20 @@ package secrets
 import (
 	"github.com/spf13/cobra"
 
+	"github.com/flash1nho/GophKeeper/app/client/cmd/secrets/actions"
 	"github.com/flash1nho/GophKeeper/config"
 	pb "github.com/flash1nho/GophKeeper/internal/grpc"
-
-	"github.com/flash1nho/GophKeeper/app/client/cmd/secrets/text"
 )
 
-func SecretsTextCommand(client *pb.GophKeeperPrivateServiceClient, settings config.SettingsObject) *cobra.Command {
+func TextCommand(client *pb.GophKeeperPrivateServiceClient, settings config.SettingsObject) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "text",
 		Short: "Текстовые данные",
 	}
 
-	cmd.AddCommand(text.SecretsTextCreateCommand(client, settings))
+	cmd.AddCommand(actions.SecretsCreateCommand(client, settings))
+	cmd.AddCommand(actions.SecretsGetCommand(client, settings))
+	cmd.AddCommand(actions.SecretsListCommand(client, settings))
 
 	return cmd
 }

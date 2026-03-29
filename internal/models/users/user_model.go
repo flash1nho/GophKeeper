@@ -31,21 +31,19 @@ type User struct {
 	Secret   []byte
 }
 
-func NewUser(id int, login string, password string, secret string) *User {
+func NewUser(login string, password string) *User {
 	return &User{
-		ID:       id,
 		Login:    login,
 		Password: password,
-		Secret:   []byte(secret),
 	}
 }
 
-func (user *User) UserRegister(ctx context.Context, pool *pgxpool.Pool, settings config.SettingsObject) (string, error) {
+func (user *User) UserRegister(ctx context.Context, pool *pgxpool.Pool, settings config.SettingsObject, secret string) (string, error) {
 	if user.Login == "" || user.Password == "" {
 		return "", ErrCredentialsRequired
 	}
 
-	if len(user.Secret) == 0 {
+	if len(secret) == 0 {
 		return "", ErrSecretRequired
 	}
 
@@ -56,7 +54,7 @@ func (user *User) UserRegister(ctx context.Context, pool *pgxpool.Pool, settings
 		return "", err
 	}
 
-	encryptedSecret, err := manager.Encrypt(user.Secret)
+	encryptedSecret, err := manager.Encrypt([]byte(secret), manager.MasterKey)
 
 	if err != nil {
 		return "", err
@@ -124,16 +122,18 @@ func (user *User) UserLogin(ctx context.Context, pool *pgxpool.Pool, settings co
 	return manager.GenerateToken(user.ID, user.Secret)
 }
 
-func (user *User) UserVerify(ctx context.Context, pool *pgxpool.Pool, settings config.SettingsObject, token string) error {
+func UserVerify(ctx context.Context, pool *pgxpool.Pool, settings config.SettingsObject, userID int, token string) error {
 	query, args, err := squirrel.Select("id", "encrypted_secret").
 		From("users").
-		Where(squirrel.Eq{"id": user.ID}).
+		Where(squirrel.Eq{"id": userID}).
 		PlaceholderFormat(squirrel.Dollar).
 		ToSql()
 
 	if err != nil {
 		return err
 	}
+
+	var user User
 
 	err = pool.QueryRow(ctx, query, args...).Scan(&user.ID, &user.Secret)
 
@@ -146,7 +146,7 @@ func (user *User) UserVerify(ctx context.Context, pool *pgxpool.Pool, settings c
 	}
 
 	manager := security.NewCryptoManager(settings.MasterKey)
-	userID, err := manager.ValidateToken(token, user.Secret)
+	userID, err = manager.ValidateToken(token, user.Secret)
 
 	if err != nil {
 		return err

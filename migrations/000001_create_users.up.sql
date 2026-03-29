@@ -4,7 +4,7 @@ CREATE TABLE users (
     id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     login VARCHAR(255) NOT NULL,
     password_hash TEXT NOT NULL,
-    encrypted_secret BYTEA NOT NULL,
+    encrypted_secret BYTEA UNIQUE NOT NULL,
     created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL
 );
 

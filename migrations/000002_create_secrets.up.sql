@@ -1,4 +1,4 @@
-CREATE TYPE secrets_type AS ENUM ('Card', 'File', 'Text');
+CREATE TYPE secrets_type AS ENUM ('Card', 'File', 'Text', 'Cred');
 
 CREATE TABLE secrets (
     id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,

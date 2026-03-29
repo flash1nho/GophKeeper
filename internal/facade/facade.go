@@ -12,8 +12,8 @@ func NewFacade() *Facade {
 	return &Facade{}
 }
 
-func (f *Facade) GetUserFromContext(ctx context.Context) (int, error) {
-	userID, err := interceptors.GetUserFromContext(ctx)
+func (f *Facade) GetUserIDFromContext(ctx context.Context) (int, error) {
+	userID, err := interceptors.GetUserIDFromContext(ctx)
 
 	if err != nil {
 		return 0, err

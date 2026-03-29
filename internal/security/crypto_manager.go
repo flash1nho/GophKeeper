@@ -5,8 +5,10 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"crypto/sha256"
+	"encoding/base64"
 	"errors"
 	"io"
+	"strconv"
 	"time"
 
 	"github.com/golang-jwt/jwt"
@@ -23,17 +25,27 @@ var (
 )
 
 type CryptoManager struct {
-	masterKey []byte
+	MasterKey []byte
 }
 
 func NewCryptoManager(masterKey []byte) *CryptoManager {
-	key := sha256.Sum256(masterKey)
-
-	return &CryptoManager{masterKey: key[:]}
+	return &CryptoManager{MasterKey: masterKey}
 }
 
-func (m *CryptoManager) Encrypt(plaintext []byte) ([]byte, error) {
-	block, err := aes.NewCipher(m.masterKey)
+func (m *CryptoManager) HashPassword(password string) (string, error) {
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+
+	return string(hash), err
+}
+
+func (m *CryptoManager) CheckPassword(password, hash string) bool {
+	return bcrypt.CompareHashAndPassword([]byte(hash), []byte(password)) == nil
+}
+
+func (m *CryptoManager) Encrypt(data []byte, key []byte) ([]byte, error) {
+	key = m.converKeyToSha256(key)
+
+	block, err := aes.NewCipher(key)
 
 	if err != nil {
 		return nil, err
@@ -51,11 +63,13 @@ func (m *CryptoManager) Encrypt(plaintext []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	return gcm.Seal(nonce, nonce, plaintext, nil), nil
+	return gcm.Seal(nonce, nonce, data, nil), nil
 }
 
-func (m *CryptoManager) Decrypt(data []byte) ([]byte, error) {
-	block, err := aes.NewCipher(m.masterKey)
+func (m *CryptoManager) Decrypt(data []byte, key []byte) ([]byte, error) {
+	key = m.converKeyToSha256(key)
+
+	block, err := aes.NewCipher(key)
 
 	if err != nil {
 		return nil, err
@@ -78,36 +92,35 @@ func (m *CryptoManager) Decrypt(data []byte) ([]byte, error) {
 	return gcm.Open(nil, nonce, ciphertext, nil)
 }
 
-func (m *CryptoManager) HashPassword(password string) (string, error) {
-	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-
-	return string(hash), err
-}
-
-func (m *CryptoManager) CheckPassword(password, hash string) bool {
-	return bcrypt.CompareHashAndPassword([]byte(hash), []byte(password)) == nil
-}
-
-func (m *CryptoManager) GenerateToken(userID int, encryptedSecret []byte) (string, error) {
-	userKey, err := m.Decrypt(encryptedSecret)
+func (m *CryptoManager) GenerateToken(userID int, enctryptedSecret []byte) (string, error) {
+	secret, err := m.Decrypt(enctryptedSecret, m.MasterKey)
 
 	if err != nil {
-		return "", ErrDecryptUserKey
+		return "", err
 	}
 
+	strUserID := strconv.Itoa(userID)
+	encryptedSub, err := m.Encrypt([]byte(strUserID), m.MasterKey)
+
+	if err != nil {
+		return "", err
+	}
+
+	encodedSub := base64.StdEncoding.EncodeToString(encryptedSub)
+
 	claims := jwt.MapClaims{
-		"sub": userID,
+		"sub": encodedSub,
 		"exp": time.Now().Add(24 * time.Hour).Unix(),
 		"iat": time.Now().Unix(),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
-	return token.SignedString(userKey)
+	return token.SignedString(secret)
 }
 
-func (m *CryptoManager) ValidateToken(tokenStr string, encryptedSecret []byte) (int, error) {
-	userKey, err := m.Decrypt(encryptedSecret)
+func (m *CryptoManager) ValidateToken(tokenStr string, enctryptedSecret []byte) (int, error) {
+	secret, err := m.Decrypt(enctryptedSecret, m.MasterKey)
 
 	if err != nil {
 		return 0, err
@@ -115,33 +128,59 @@ func (m *CryptoManager) ValidateToken(tokenStr string, encryptedSecret []byte) (
 
 	token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
-			return 0, ErrUnexpectedSigning
+			return nil, ErrUnexpectedSigning
 		}
 
-		return userKey, nil
+		return secret, nil
 	})
 
+	if err != nil || !token.Valid {
+		return 0, ErrTokenInvalid
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+
+	if !ok {
+		return 0, ErrTokenInvalid
+	}
+
+	return m.GetUserIDFromToken(claims)
+}
+
+func (m *CryptoManager) GetUserIDFromToken(claims jwt.MapClaims) (int, error) {
+	encodedSub, ok := claims["sub"].(string)
+
+	if !ok {
+		return 0, ErrTokenInvalid
+	}
+
+	encryptedSub, err := base64.StdEncoding.DecodeString(encodedSub)
+
 	if err != nil {
-		var vErr *jwt.ValidationError
-
-		if errors.As(err, &vErr) {
-			if vErr.Errors&jwt.ValidationErrorExpired != 0 {
-				return 0, ErrTokenExpired
-			}
-		}
-
 		return 0, ErrTokenInvalid
 	}
 
-	if !token.Valid {
+	decryptedSub, err := m.Decrypt(encryptedSub, m.MasterKey)
+
+	if err != nil {
+		return 0, ErrDecryptUserKey
+	}
+
+	subStr := string(decryptedSub)
+	userID, err := strconv.Atoi(subStr)
+
+	if err != nil {
 		return 0, ErrTokenInvalid
 	}
 
-	if claims, ok := token.Claims.(jwt.MapClaims); ok {
-		if sub, ok := claims["sub"].(float64); ok {
-			return int(sub), nil
-		}
+	return userID, nil
+}
+
+func (m *CryptoManager) converKeyToSha256(key []byte) []byte {
+	if len(key) != 32 {
+		h := sha256.Sum256(key)
+		key = h[:]
 	}
 
-	return 0, ErrTokenInvalid
+	return key
 }

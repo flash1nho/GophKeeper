@@ -261,7 +261,7 @@ var file_internal_grpc_public_proto_goTypes = []any{
 	(*UserLoginRequest)(nil),     // 2: grpc.UserLoginRequest
 	(*UserLoginResponse)(nil),    // 3: grpc.UserLoginResponse
 }
-var file_internal_grpc_public_proto_depIdxs = []int32{
+var file_internal_grpc_public_proto_depIDxs = []int32{
 	0, // 0: grpc.GophKeeperPublicService.Register:input_type -> grpc.UserRegisterRequest
 	2, // 1: grpc.GophKeeperPublicService.Login:input_type -> grpc.UserLoginRequest
 	1, // 2: grpc.GophKeeperPublicService.Register:output_type -> grpc.UserRegisterResponse
@@ -289,10 +289,10 @@ func file_internal_grpc_public_proto_init() {
 			NumServices:   1,
 		},
 		GoTypes:           file_internal_grpc_public_proto_goTypes,
-		DependencyIndexes: file_internal_grpc_public_proto_depIdxs,
+		DependencyIndexes: file_internal_grpc_public_proto_depIDxs,
 		MessageInfos:      file_internal_grpc_public_proto_msgTypes,
 	}.Build()
 	File_internal_grpc_public_proto = out.File
 	file_internal_grpc_public_proto_goTypes = nil
-	file_internal_grpc_public_proto_depIdxs = nil
+	file_internal_grpc_public_proto_depIDxs = nil
 }

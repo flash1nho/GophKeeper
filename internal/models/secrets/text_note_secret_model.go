@@ -2,6 +2,9 @@ package secrets
 
 import (
 	"errors"
+
+	"github.com/flash1nho/GophKeeper/config"
+	"github.com/flash1nho/GophKeeper/internal/security"
 )
 
 var (
@@ -11,30 +14,32 @@ var (
 type Text struct {
 	BaseSecret
 
-	Content string
+	Content string `json:"content"`
 }
 
-func NewText(userID int, content string) *Text {
+func NewText(userID int, settings config.SettingsObject) *Text {
 	return &Text{
-		BaseSecret: BaseSecret{UserID: userID},
-		Content:    content,
+		BaseSecret: BaseSecret{
+			UserID:        userID,
+			CryptoManager: security.NewCryptoManager(settings.MasterKey),
+		},
 	}
 }
 
-func (tn *Text) GetBaseSecret() *BaseSecret {
-	return &tn.BaseSecret
+func (t *Text) GetBaseSecret() *BaseSecret {
+	return &t.BaseSecret
 }
 
-func (tn *Text) GetType() string {
+func (t *Text) GetType() string {
 	return "Text"
 }
 
-func (tn *Text) GetPayload() any {
-	return map[string]string{"content": tn.Content}
+func (t *Text) GetSecret() any {
+	return t
 }
 
-func (tn *Text) Validate() error {
-	if tn.Content == "" {
+func (t *Text) Validate() error {
+	if t.Content == "" {
 		return ErrContentEmpty
 	}
 

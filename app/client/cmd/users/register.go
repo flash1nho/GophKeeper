@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 
 	"github.com/flash1nho/GophKeeper/config"
 	pb "github.com/flash1nho/GophKeeper/internal/grpc"
@@ -37,7 +38,13 @@ func UsersRegisterCommand(client *pb.GophKeeperPublicServiceClient, settings con
 				return
 			}
 
-			fmt.Printf("token: %s\n", response.Token)
+			viper.Set("token", response.Token)
+
+			if err := viper.WriteConfig(); err != nil {
+				viper.SafeWriteConfig()
+			}
+
+			fmt.Println("Успешная регистрация!")
 		},
 	}
 

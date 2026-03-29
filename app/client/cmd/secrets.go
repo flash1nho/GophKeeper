@@ -1,7 +1,10 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 
 	pb "github.com/flash1nho/GophKeeper/internal/grpc"
 
@@ -20,7 +23,13 @@ func SecretsCommand(settings config.SettingsObject) *cobra.Command {
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			var err error
 
-			token, err := cmd.Flags().GetString("token")
+			token := viper.GetString("token")
+
+			if token == "" {
+				fmt.Println("Токен не найден. Выполните вход!")
+
+				return
+			}
 
 			if err != nil {
 				settings.Log.Fatal(err.Error())
@@ -45,7 +54,7 @@ func SecretsCommand(settings config.SettingsObject) *cobra.Command {
 		},
 	}
 
-	cmd.AddCommand(secrets.SecretsTextCommand(&client, settings))
+	cmd.AddCommand(secrets.TextCommand(&client, settings))
 
 	return cmd
 }

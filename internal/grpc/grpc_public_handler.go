@@ -17,31 +17,23 @@ type GrpcPublicHandler struct {
 }
 
 func (g *GrpcPublicHandler) Register(ctx context.Context, req *UserRegisterRequest) (*UserRegisterResponse, error) {
-	var response UserRegisterResponse
-
-	user := users.NewUser(0, req.Login, req.Password, req.Secret)
-	token, err := user.UserRegister(ctx, g.Pool, g.Settings)
+	user := users.NewUser(req.Login, req.Password)
+	token, err := user.UserRegister(ctx, g.Pool, g.Settings, req.Secret)
 
 	if err != nil {
 		return nil, err
 	}
 
-	response.Token = token
-
-	return &response, nil
+	return &UserRegisterResponse{Token: token}, nil
 }
 
 func (g *GrpcPublicHandler) Login(ctx context.Context, req *UserLoginRequest) (*UserLoginResponse, error) {
-	var response UserLoginResponse
-
-	user := users.NewUser(0, req.Login, req.Password, "")
+	user := users.NewUser(req.Login, req.Password)
 	token, err := user.UserLogin(ctx, g.Pool, g.Settings)
 
 	if err != nil {
 		return nil, err
 	}
 
-	response.Token = token
-
-	return &response, nil
+	return &UserLoginResponse{Token: token}, nil
 }

@@ -13,6 +13,7 @@ import (
 
 	"github.com/flash1nho/GophKeeper/config"
 	"github.com/flash1nho/GophKeeper/internal/models/users"
+	"github.com/flash1nho/GophKeeper/internal/security"
 )
 
 var (
@@ -41,34 +42,39 @@ func InterceptorAuth(pool *pgxpool.Pool, settings config.SettingsObject) grpc.Un
 		token, _, err := new(jwt.Parser).ParseUnverified(tokenParam, jwt.MapClaims{})
 
 		if err != nil {
+			settings.Log.Error(err.Error())
+
 			return nil, status.Error(codes.Unauthenticated, "недопустимый формат токена")
 		}
 
-		user := users.NewUser(0, "", "", "")
+		userID := 0
 
 		if claims, ok := token.Claims.(jwt.MapClaims); ok {
-			if sub, ok := claims["sub"].(float64); ok {
-				user.ID = int(sub)
+			manager := security.NewCryptoManager(settings.MasterKey)
+			userID, err = manager.GetUserIDFromToken(claims)
+
+			if err != nil {
+				settings.Log.Error(err.Error())
 			}
 		}
 
-		if user.ID == 0 {
+		if userID == 0 {
 			return nil, status.Error(codes.Unauthenticated, "недействительные требования")
 		}
 
-		err = user.UserVerify(ctx, pool, settings, tokenParam)
+		err = users.UserVerify(ctx, pool, settings, userID, tokenParam)
 
 		if err != nil {
 			return nil, status.Error(codes.Unauthenticated, "Верификация не пройдена")
 		}
 
-		withValueCtx := context.WithValue(ctx, userKey, user.ID)
+		withValueCtx := context.WithValue(ctx, userKey, userID)
 
 		return handler(withValueCtx, req)
 	}
 }
 
-func GetUserFromContext(ctx context.Context) (int, error) {
+func GetUserIDFromContext(ctx context.Context) (int, error) {
 	userID, ok := ctx.Value(userKey).(int)
 
 	if !ok {
