@@ -27,6 +27,7 @@ type BaseSecret struct {
 	ID            int                     `json:"-"`
 	UserID        int                     `json:"-"`
 	CreatedAt     time.Time               `json:"-"`
+	UpdatedAt     time.Time               `json:"-"`
 	CryptoManager *security.CryptoManager `json:"-"`
 }
 
@@ -34,6 +35,7 @@ type SecretResponse struct {
 	ID        int    `json:"id"`
 	Data      any    `json:"data"`
 	CreatedAt string `json:"created_at"`
+	UpdatedAt string `json:"updated_at"`
 }
 
 type Secret interface {
@@ -77,9 +79,11 @@ func Create(ctx context.Context, pool *pgxpool.Pool, s Secret) error {
 		return err
 	}
 
+	dateAt := time.Now().UTC()
+
 	query, args, err := squirrel.Insert("secrets").
-		Columns("user_id", "encrypted_data", "type", "created_at").
-		Values(baseSecret.UserID, encryptedData, s.GetType(), time.Now().UTC()).
+		Columns("user_id", "encrypted_data", "type", "created_at", "updated_at").
+		Values(baseSecret.UserID, encryptedData, s.GetType(), dateAt, dateAt).
 		Suffix("RETURNING id").
 		PlaceholderFormat(squirrel.Dollar).
 		ToSql()
@@ -92,13 +96,13 @@ func Create(ctx context.Context, pool *pgxpool.Pool, s Secret) error {
 }
 
 func Get(ctx context.Context, pool *pgxpool.Pool, s Secret, ID int) ([]any, error) {
-	baseSecret := s.GetBaseSecret()
-
 	if ID == 0 {
 		return nil, ErrIDEmpty
 	}
 
-	query, args, err := squirrel.Select("id", "encrypted_data", "created_at").
+	baseSecret := s.GetBaseSecret()
+
+	query, args, err := squirrel.Select("id", "encrypted_data", "created_at", "updated_at").
 		From("secrets").
 		Where(squirrel.Eq{"id": ID}).
 		Where(squirrel.Eq{"user_id": baseSecret.UserID}).
@@ -116,7 +120,7 @@ func Get(ctx context.Context, pool *pgxpool.Pool, s Secret, ID int) ([]any, erro
 func List(ctx context.Context, pool *pgxpool.Pool, s Secret) ([]any, error) {
 	baseSecret := s.GetBaseSecret()
 
-	query, args, err := squirrel.Select("id", "encrypted_data", "created_at").
+	query, args, err := squirrel.Select("id", "encrypted_data", "created_at", "updated_at").
 		From("secrets").
 		Where(squirrel.Eq{"user_id": baseSecret.UserID}).
 		Where(squirrel.Eq{"type": s.GetType()}).
@@ -129,6 +133,59 @@ func List(ctx context.Context, pool *pgxpool.Pool, s Secret) ([]any, error) {
 	}
 
 	return baseSecret.data(ctx, pool, s, query, args)
+}
+
+func Update(ctx context.Context, pool *pgxpool.Pool, s Secret, ID int) error {
+	if ID == 0 {
+		return ErrIDEmpty
+	}
+
+	err := s.UpdateValidate()
+
+	if err != nil {
+		return err
+	}
+
+	baseSecret := s.GetBaseSecret()
+
+	if baseSecret.UserID == 0 {
+		return ErrInvalidUserID
+	}
+
+	payload, err := json.Marshal(s.GetSecret())
+
+	if err != nil {
+		return err
+	}
+
+	userKey, err := baseSecret.getUserKey(ctx, pool)
+
+	encryptedUserData, err := baseSecret.CryptoManager.Encrypt(payload, userKey)
+
+	if err != nil {
+		return err
+	}
+
+	encryptedData, err := baseSecret.CryptoManager.Encrypt(encryptedUserData, baseSecret.CryptoManager.MasterKey)
+
+	if err != nil {
+		return err
+	}
+
+	dateAt := time.Now().UTC()
+
+	query, args, err := squirrel.Insert("secrets").
+		Columns("user_id", "encrypted_data", "type", "created_at", "updated_at").
+		Values(baseSecret.UserID, encryptedData, s.GetType(), dateAt, dateAt).
+		Suffix("RETURNING id").
+		PlaceholderFormat(squirrel.Dollar).
+		ToSql()
+
+	if err != nil {
+		return err
+	}
+
+	return pool.QueryRow(ctx, query, args...).Scan(&baseSecret.ID)
 }
 
 func (baseSecret *BaseSecret) data(ctx context.Context, pool *pgxpool.Pool, s Secret, query string, args []interface{}) ([]any, error) {
@@ -163,8 +220,9 @@ func (baseSecret *BaseSecret) data(ctx context.Context, pool *pgxpool.Pool, s Se
 		var id int
 		var encryptedData []byte
 		var createdAt time.Time
+		var updatedAt time.Time
 
-		if err := rows.Scan(&id, &encryptedData, &createdAt); err != nil {
+		if err := rows.Scan(&id, &encryptedData, &createdAt, &updatedAt); err != nil {
 			return nil, err
 		}
 
@@ -189,7 +247,8 @@ func (baseSecret *BaseSecret) data(ctx context.Context, pool *pgxpool.Pool, s Se
 		result := SecretResponse{
 			ID:        id,
 			Data:      secret,
-			CreatedAt: createdAt.Format("02.01.2006 15:04"),
+			CreatedAt: createdAt.Format("02.01.2006 15:04:05"),
+			UpdatedAt: updatedAt.Format("02.01.2006 15:04:05"),
 		}
 
 		results = append(results, result)
@@ -200,48 +259,6 @@ func (baseSecret *BaseSecret) data(ctx context.Context, pool *pgxpool.Pool, s Se
 	}
 
 	return results, rows.Err()
-}
-
-func Update(ctx context.Context, pool *pgxpool.Pool, s Secret) error {
-	err := s.UpdateValidate()
-
-	if err != nil {
-		return err
-	}
-
-	payload, err := json.Marshal(s.GetSecret())
-
-	if err != nil {
-		return err
-	}
-
-	baseSecret := s.GetBaseSecret()
-	userKey, err := baseSecret.getUserKey(ctx, pool)
-
-	encryptedUserData, err := baseSecret.CryptoManager.Encrypt(payload, userKey)
-
-	if err != nil {
-		return err
-	}
-
-	encryptedData, err := baseSecret.CryptoManager.Encrypt(encryptedUserData, baseSecret.CryptoManager.MasterKey)
-
-	if err != nil {
-		return err
-	}
-
-	query, args, err := squirrel.Update("secrets").
-		Columns("user_id", "encrypted_data", "type", "created_at").
-		Values(baseSecret.UserID, encryptedData, s.GetType(), time.Now().UTC()).
-		Suffix("RETURNING id").
-		PlaceholderFormat(squirrel.Dollar).
-		ToSql()
-
-	if err != nil {
-		return err
-	}
-
-	return pool.QueryRow(ctx, query, args...).Scan(&baseSecret.ID)
 }
 
 func (baseSecret *BaseSecret) getUserKey(ctx context.Context, pool *pgxpool.Pool) ([]byte, error) {

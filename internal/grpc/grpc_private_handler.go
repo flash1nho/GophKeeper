@@ -151,31 +151,23 @@ func (g *GrpcPrivateHandler) Update(ctx context.Context, req *UpdateRequest) (*U
 		return nil, err
 	}
 
-	results, err := secrets.Update(ctx, g.Pool, secretObject)
+	jsonData, err := json.Marshal(req.Data.AsMap())
 
 	if err != nil {
 		return nil, err
 	}
 
-	marshal, err := json.Marshal(results)
+	if err := json.Unmarshal(jsonData, secretObject.GetSecret()); err != nil {
+		return nil, err
+	}
+
+	err = secrets.Update(ctx, g.Pool, secretObject, int(req.ID))
 
 	if err != nil {
 		return nil, err
 	}
 
-	var data []interface{}
-
-	if err := json.Unmarshal(marshal, &data); err != nil {
-		return nil, err
-	}
-
-	protoSecrets, err := structpb.NewList(data)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return &ListResponse{Secrets: protoSecrets}, nil
+	return &UpdateResponse{}, nil
 }
 
 func (g *GrpcPrivateHandler) getSecretObject(userID int, secretType string) (secrets.Secret, error) {

@@ -10,7 +10,7 @@ import (
 var (
 	ErrLoginEmpty      = errors.New("'login' не может быть пустым")
 	ErrPasswordEmpty   = errors.New("'login' не может быть пустым")
-	ErrUpdateDateEmpty = errors.New("укажите хотя бы одно из доступных атрибутов для обновления: 'login' или 'password'")
+	ErrUpdateCredEmpty = errors.New("укажите хотя бы одно из доступных атрибутов для обновления: 'login' или 'password'")
 )
 
 type Cred struct {
@@ -55,7 +55,7 @@ func (t *Cred) CreateValidate() error {
 
 func (t *Cred) UpdateValidate() error {
 	if t.Login == "" && t.Password == "" {
-		return ErrUpdateDateEmpty
+		return ErrUpdateCredEmpty
 	}
 
 	return nil

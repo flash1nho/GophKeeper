@@ -5,7 +5,8 @@ CREATE TABLE users (
     login VARCHAR(255) NOT NULL,
     password_hash TEXT NOT NULL,
     encrypted_secret BYTEA UNIQUE NOT NULL,
-    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL
+    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL
 );
 
 CREATE UNIQUE INDEX idx_users_login ON users(login);

@@ -53,7 +53,7 @@ func SecretsUpdateCommand(client *pb.GophKeeperPrivateServiceClient, settings co
 				Type: Type,
 			}
 
-			response, err := (*client).Update(cmd.Context(), request)
+			_, err = (*client).Update(cmd.Context(), request)
 
 			if err != nil {
 				if statusErr, ok := status.FromError(err); ok {

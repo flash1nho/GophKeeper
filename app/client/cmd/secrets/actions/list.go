@@ -2,6 +2,7 @@ package actions
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/spf13/cobra"
 
@@ -45,14 +46,27 @@ func SecretsListCommand(client *pb.GophKeeperPrivateServiceClient, settings conf
 
 				if data, ok := fields["data"]; ok {
 					dataFields := data.GetStructValue().GetFields()
+					keys := make([]string, 0, len(dataFields))
 
-					for k, v := range dataFields {
+					for k := range dataFields {
+						keys = append(keys, k)
+					}
+
+					sort.Strings(keys)
+
+					for _, k := range keys {
+						v := dataFields[k]
+
 						fmt.Printf("%s: %s\n", k, v.GetStringValue())
 					}
 				}
 
 				if createdAt, ok := fields["created_at"]; ok {
 					fmt.Printf("created_at: %v\n", createdAt.GetStringValue())
+				}
+
+				if updatedAt, ok := fields["updated_at"]; ok {
+					fmt.Printf("updated_at: %v\n", updatedAt.GetStringValue())
 				}
 
 				fmt.Println("---")

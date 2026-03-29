@@ -25,10 +25,12 @@ var (
 )
 
 type User struct {
-	ID       int
-	Login    string
-	Password string
-	Secret   []byte
+	ID        int
+	Login     string
+	Password  string
+	Secret    []byte
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 func NewUser(login string, password string) *User {
@@ -60,9 +62,11 @@ func (user *User) UserRegister(ctx context.Context, pool *pgxpool.Pool, settings
 		return "", err
 	}
 
+	dateAt := time.Now().UTC()
+
 	query, args, err := squirrel.Insert("users").
-		Columns("login", "password_hash", "encrypted_secret", "created_at").
-		Values(user.Login, passwordHash, encryptedSecret, time.Now().UTC()).
+		Columns("login", "password_hash", "encrypted_secret", "created_at", "updated_at").
+		Values(user.Login, passwordHash, encryptedSecret, dateAt, dateAt).
 		Suffix("RETURNING id, encrypted_secret").
 		PlaceholderFormat(squirrel.Dollar).
 		ToSql()
