@@ -9,16 +9,17 @@ import (
 	"github.com/flash1nho/GophKeeper/config"
 	pb "github.com/flash1nho/GophKeeper/internal/grpc"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/iancoleman/strcase"
 )
 
-func SecretsGetCommand(client *pb.GophKeeperPrivateServiceClient, settings config.SettingsObject) *cobra.Command {
+func SecretsUpdateCommand(client *pb.GophKeeperPrivateServiceClient, settings config.SettingsObject) *cobra.Command {
 	id := 0
 
 	cmd := &cobra.Command{
-		Use:                "get",
-		Short:              "Просмотр секрета",
+		Use:                "update",
+		Short:              "Обновление секрета",
 		DisableFlagParsing: true,
 		Run: func(cmd *cobra.Command, args []string) {
 			dataMap := make(map[string]interface{})
@@ -38,18 +39,25 @@ func SecretsGetCommand(client *pb.GophKeeperPrivateServiceClient, settings confi
 				fmt.Sscanf(idStr, "%d", &id)
 			}
 
+			Data, err := structpb.NewStruct(dataMap)
+
+			if err != nil {
+				settings.Log.Fatal(err.Error())
+			}
+
 			Type := strcase.ToCamel(cmd.Parent().Name())
 
-			request := &pb.GetRequest{
+			request := &pb.UpdateRequest{
 				ID:   int32(id),
+				Data: Data,
 				Type: Type,
 			}
 
-			response, err := (*client).Get(cmd.Context(), request)
+			response, err := (*client).Update(cmd.Context(), request)
 
 			if err != nil {
 				if statusErr, ok := status.FromError(err); ok {
-					fmt.Printf("Ошибка просмотра секрета: %s\n", statusErr.Message())
+					fmt.Printf("Ошибка обновления секрета: %s\n", statusErr.Message())
 				} else {
 					settings.Log.Error(err.Error())
 				}
@@ -57,25 +65,7 @@ func SecretsGetCommand(client *pb.GophKeeperPrivateServiceClient, settings confi
 				return
 			}
 
-			fields := response.Secret.GetFields()
-
-			if id, ok := fields["id"]; ok {
-				fmt.Printf("id: %g\n", id.GetNumberValue())
-			}
-
-			if data, ok := fields["data"]; ok {
-				if structData := data.GetStructValue(); structData != nil {
-					for k, v := range structData.GetFields() {
-						fmt.Printf("%s: %v\n", k, v.AsInterface())
-					}
-				} else {
-					fmt.Printf("data: %v\n", data.AsInterface())
-				}
-			}
-
-			if createdAt, ok := fields["created_at"]; ok {
-				fmt.Printf("created_at: %v\n", createdAt.GetStringValue())
-			}
+			fmt.Printf("Обновлено!")
 		},
 	}
 

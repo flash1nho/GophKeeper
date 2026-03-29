@@ -14,8 +14,9 @@ import (
 
 func SecretsListCommand(client *pb.GophKeeperPrivateServiceClient, settings config.SettingsObject) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "list",
-		Short: "Список секретов",
+		Use:                "list",
+		Short:              "Список секретов",
+		DisableFlagParsing: true,
 		Run: func(cmd *cobra.Command, args []string) {
 			Type := strcase.ToCamel(cmd.Parent().Name())
 
@@ -35,7 +36,27 @@ func SecretsListCommand(client *pb.GophKeeperPrivateServiceClient, settings conf
 				return
 			}
 
-			fmt.Println(response.Secrets)
+			for _, secretVal := range response.Secrets.Values {
+				fields := secretVal.GetStructValue().GetFields()
+
+				if id, ok := fields["id"]; ok {
+					fmt.Printf("id: %v\n", id.GetNumberValue())
+				}
+
+				if data, ok := fields["data"]; ok {
+					dataFields := data.GetStructValue().GetFields()
+
+					for k, v := range dataFields {
+						fmt.Printf("%s: %s\n", k, v.GetStringValue())
+					}
+				}
+
+				if createdAt, ok := fields["created_at"]; ok {
+					fmt.Printf("created_at: %v\n", createdAt.GetStringValue())
+				}
+
+				fmt.Println("---")
+			}
 		},
 	}
 

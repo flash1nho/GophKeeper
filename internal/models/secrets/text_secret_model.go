@@ -8,7 +8,8 @@ import (
 )
 
 var (
-	ErrContentEmpty = errors.New("текст не может быть пустым")
+	ErrContentEmpty    = errors.New("'content' не может быть пустым")
+	ErrUpdateDateEmpty = errors.New("укажите атрибут для обновления: 'content'")
 )
 
 type Text struct {
@@ -38,9 +39,17 @@ func (t *Text) GetSecret() any {
 	return t
 }
 
-func (t *Text) Validate() error {
+func (t *Text) CreateValidate() error {
 	if t.Content == "" {
 		return ErrContentEmpty
+	}
+
+	return nil
+}
+
+func (t *Cred) UpdateValidate() error {
+	if t.Content == "" {
+		return ErrUpdateDateEmpty
 	}
 
 	return nil

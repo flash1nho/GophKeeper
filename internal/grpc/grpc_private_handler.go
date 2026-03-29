@@ -33,13 +33,10 @@ func (g *GrpcPrivateHandler) Create(ctx context.Context, req *CreateRequest) (*C
 		return nil, err
 	}
 
-	var secretObject secrets.Secret
+	secretObject, err := g.getSecretObject(userID, req.Type)
 
-	switch req.Type {
-	case "Text":
-		secretObject = secrets.NewText(userID, g.Settings)
-	default:
-		return nil, ErrUnknownType
+	if err != nil {
+		return nil, err
 	}
 
 	jsonData, err := json.Marshal(req.Data.AsMap())
@@ -68,13 +65,10 @@ func (g *GrpcPrivateHandler) Get(ctx context.Context, req *GetRequest) (*GetResp
 		return nil, err
 	}
 
-	var secretObject secrets.Secret
+	secretObject, err := g.getSecretObject(userID, req.Type)
 
-	switch req.Type {
-	case "Text":
-		secretObject = secrets.NewText(userID, g.Settings)
-	default:
-		return nil, ErrUnknownType
+	if err != nil {
+		return nil, err
 	}
 
 	results, err := secrets.Get(ctx, g.Pool, secretObject, int(req.ID))
@@ -83,7 +77,7 @@ func (g *GrpcPrivateHandler) Get(ctx context.Context, req *GetRequest) (*GetResp
 		return nil, err
 	}
 
-	b, err := json.Marshal(results[0])
+	marshal, err := json.Marshal(results[0])
 
 	if err != nil {
 		return nil, err
@@ -91,7 +85,7 @@ func (g *GrpcPrivateHandler) Get(ctx context.Context, req *GetRequest) (*GetResp
 
 	var data map[string]interface{}
 
-	if err := json.Unmarshal(b, &data); err != nil {
+	if err := json.Unmarshal(marshal, &data); err != nil {
 		return nil, err
 	}
 
@@ -111,26 +105,90 @@ func (g *GrpcPrivateHandler) List(ctx context.Context, req *ListRequest) (*ListR
 		return nil, err
 	}
 
-	var secretObject secrets.Secret
+	secretObject, err := g.getSecretObject(userID, req.Type)
 
-	switch req.Type {
-	case "Text":
-		secretObject = secrets.NewText(userID, g.Settings)
-	default:
-		return nil, ErrUnknownType
+	if err != nil {
+		return nil, err
 	}
 
 	results, err := secrets.List(ctx, g.Pool, secretObject)
 
-  if err != nil {
-    return nil, err
-  }
+	if err != nil {
+		return nil, err
+	}
 
-  listValue, err := structpb.NewList(results)
+	marshal, err := json.Marshal(results)
 
-  if err != nil {
-      return nil, err
-  }
+	if err != nil {
+		return nil, err
+	}
 
-  return &ListResponse{Secrets: listValue}, nil
+	var data []interface{}
+
+	if err := json.Unmarshal(marshal, &data); err != nil {
+		return nil, err
+	}
+
+	protoSecrets, err := structpb.NewList(data)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &ListResponse{Secrets: protoSecrets}, nil
+}
+
+func (g *GrpcPrivateHandler) Update(ctx context.Context, req *UpdateRequest) (*UpdateResponse, error) {
+	userID, err := g.facade.GetUserIDFromContext(ctx)
+
+	if err != nil {
+		return nil, err
+	}
+
+	secretObject, err := g.getSecretObject(userID, req.Type)
+
+	if err != nil {
+		return nil, err
+	}
+
+	results, err := secrets.Update(ctx, g.Pool, secretObject)
+
+	if err != nil {
+		return nil, err
+	}
+
+	marshal, err := json.Marshal(results)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var data []interface{}
+
+	if err := json.Unmarshal(marshal, &data); err != nil {
+		return nil, err
+	}
+
+	protoSecrets, err := structpb.NewList(data)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &ListResponse{Secrets: protoSecrets}, nil
+}
+
+func (g *GrpcPrivateHandler) getSecretObject(userID int, secretType string) (secrets.Secret, error) {
+	var secretObject secrets.Secret
+
+	switch secretType {
+	case "Text":
+		secretObject = secrets.NewText(userID, g.Settings)
+	case "Cred":
+		secretObject = secrets.NewCred(userID, g.Settings)
+	default:
+		return nil, ErrUnknownType
+	}
+
+	return secretObject, nil
 }

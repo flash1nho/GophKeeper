@@ -12,7 +12,6 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/iancoleman/strcase"
-	"go.uber.org/zap"
 )
 
 func SecretsCreateCommand(client *pb.GophKeeperPrivateServiceClient, settings config.SettingsObject) *cobra.Command {
@@ -29,8 +28,6 @@ func SecretsCreateCommand(client *pb.GophKeeperPrivateServiceClient, settings co
 				if len(kv) == 2 {
 					field := strings.TrimPrefix(kv[0], "--")
 					dataMap[field] = kv[1]
-				} else {
-					settings.Log.Fatal("Неверный формат аргумента", zap.String("variable_name", arg))
 				}
 			}
 
@@ -43,8 +40,8 @@ func SecretsCreateCommand(client *pb.GophKeeperPrivateServiceClient, settings co
 			Type := strcase.ToCamel(cmd.Parent().Name())
 
 			request := &pb.CreateRequest{
-				Type: Type,
 				Data: Data,
+				Type: Type,
 			}
 
 			response, err := (*client).Create(cmd.Context(), request)
@@ -59,7 +56,7 @@ func SecretsCreateCommand(client *pb.GophKeeperPrivateServiceClient, settings co
 				return
 			}
 
-			fmt.Printf("id: %d\n", int(response.ID))
+			fmt.Printf("Создано! id: %d\n", int(response.ID))
 		},
 	}
 

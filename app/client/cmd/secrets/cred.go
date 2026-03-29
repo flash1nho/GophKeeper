@@ -8,10 +8,10 @@ import (
 	pb "github.com/flash1nho/GophKeeper/internal/grpc"
 )
 
-func TextCommand(client *pb.GophKeeperPrivateServiceClient, settings config.SettingsObject) *cobra.Command {
+func CredCommand(client *pb.GophKeeperPrivateServiceClient, settings config.SettingsObject) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "text",
-		Short: "Текстовые данные",
+		Use:   "cred",
+		Short: "Пара логин/пароль",
 	}
 
 	cmd.AddCommand(actions.SecretsCreateCommand(client, settings))

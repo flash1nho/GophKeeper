@@ -7,12 +7,13 @@
 package grpc
 
 import (
-	_struct "github.com/golang/protobuf/ptypes/struct"
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
+
+	_struct "github.com/golang/protobuf/ptypes/struct"
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -24,8 +25,8 @@ const (
 
 type CreateRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Type          string                 `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"`
-	Data          *_struct.Struct        `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`
+	Data          *_struct.Struct        `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
+	Type          string                 `protobuf:"bytes,2,opt,name=type,proto3" json:"type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -60,18 +61,18 @@ func (*CreateRequest) Descriptor() ([]byte, []int) {
 	return file_internal_grpc_private_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *CreateRequest) GetType() string {
-	if x != nil {
-		return x.Type
-	}
-	return ""
-}
-
 func (x *CreateRequest) GetData() *_struct.Struct {
 	if x != nil {
 		return x.Data
 	}
 	return nil
+}
+
+func (x *CreateRequest) GetType() string {
+	if x != nil {
+		return x.Type
+	}
+	return ""
 }
 
 type CreateResponse struct {
@@ -305,7 +306,8 @@ func (x *ListResponse) GetSecrets() *_struct.ListValue {
 type UpdateRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ID            int32                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
-	Type          string                 `protobuf:"bytes,2,opt,name=type,proto3" json:"type,omitempty"`
+	Data          *_struct.Struct        `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`
+	Type          string                 `protobuf:"bytes,3,opt,name=type,proto3" json:"type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -345,6 +347,13 @@ func (x *UpdateRequest) GetID() int32 {
 		return x.ID
 	}
 	return 0
+}
+
+func (x *UpdateRequest) GetData() *_struct.Struct {
+	if x != nil {
+		return x.Data
+	}
+	return nil
 }
 
 func (x *UpdateRequest) GetType() string {
@@ -483,9 +492,9 @@ var File_internal_grpc_private_proto protoreflect.FileDescriptor
 const file_internal_grpc_private_proto_rawDesc = "" +
 	"\n" +
 	"\x1binternal/grpc/private.proto\x12\x04grpc\x1a\x1cgoogle/protobuf/struct.proto\"P\n" +
-	"\rCreateRequest\x12\x12\n" +
-	"\x04type\x18\x01 \x01(\tR\x04type\x12+\n" +
-	"\x04data\x18\x02 \x01(\v2\x17.google.protobuf.StructR\x04data\" \n" +
+	"\rCreateRequest\x12+\n" +
+	"\x04data\x18\x01 \x01(\v2\x17.google.protobuf.StructR\x04data\x12\x12\n" +
+	"\x04type\x18\x02 \x01(\tR\x04type\" \n" +
 	"\x0eCreateResponse\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x05R\x02id\"0\n" +
 	"\n" +
@@ -497,10 +506,11 @@ const file_internal_grpc_private_proto_rawDesc = "" +
 	"\vListRequest\x12\x12\n" +
 	"\x04type\x18\x01 \x01(\tR\x04type\"D\n" +
 	"\fListResponse\x124\n" +
-	"\asecrets\x18\x01 \x01(\v2\x1a.google.protobuf.ListValueR\asecrets\"3\n" +
+	"\asecrets\x18\x01 \x01(\v2\x1a.google.protobuf.ListValueR\asecrets\"`\n" +
 	"\rUpdateRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\x05R\x02id\x12\x12\n" +
-	"\x04type\x18\x02 \x01(\tR\x04type\"\x10\n" +
+	"\x02id\x18\x01 \x01(\x05R\x02id\x12+\n" +
+	"\x04data\x18\x02 \x01(\v2\x17.google.protobuf.StructR\x04data\x12\x12\n" +
+	"\x04type\x18\x03 \x01(\tR\x04type\"\x10\n" +
 	"\x0eUpdateResponse\"3\n" +
 	"\rDeleteRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x05R\x02id\x12\x12\n" +
@@ -544,21 +554,22 @@ var file_internal_grpc_private_proto_depIDxs = []int32{
 	10, // 0: grpc.CreateRequest.data:type_name -> google.protobuf.Struct
 	10, // 1: grpc.GetResponse.secret:type_name -> google.protobuf.Struct
 	11, // 2: grpc.ListResponse.secrets:type_name -> google.protobuf.ListValue
-	0,  // 3: grpc.GophKeeperPrivateService.Create:input_type -> grpc.CreateRequest
-	2,  // 4: grpc.GophKeeperPrivateService.Get:input_type -> grpc.GetRequest
-	4,  // 5: grpc.GophKeeperPrivateService.List:input_type -> grpc.ListRequest
-	6,  // 6: grpc.GophKeeperPrivateService.Update:input_type -> grpc.UpdateRequest
-	8,  // 7: grpc.GophKeeperPrivateService.Delete:input_type -> grpc.DeleteRequest
-	1,  // 8: grpc.GophKeeperPrivateService.Create:output_type -> grpc.CreateResponse
-	3,  // 9: grpc.GophKeeperPrivateService.Get:output_type -> grpc.GetResponse
-	5,  // 10: grpc.GophKeeperPrivateService.List:output_type -> grpc.ListResponse
-	7,  // 11: grpc.GophKeeperPrivateService.Update:output_type -> grpc.UpdateResponse
-	9,  // 12: grpc.GophKeeperPrivateService.Delete:output_type -> grpc.DeleteResponse
-	8,  // [8:13] is the sub-list for method output_type
-	3,  // [3:8] is the sub-list for method input_type
-	3,  // [3:3] is the sub-list for extension type_name
-	3,  // [3:3] is the sub-list for extension extendee
-	0,  // [0:3] is the sub-list for field type_name
+	10, // 3: grpc.UpdateRequest.data:type_name -> google.protobuf.Struct
+	0,  // 4: grpc.GophKeeperPrivateService.Create:input_type -> grpc.CreateRequest
+	2,  // 5: grpc.GophKeeperPrivateService.Get:input_type -> grpc.GetRequest
+	4,  // 6: grpc.GophKeeperPrivateService.List:input_type -> grpc.ListRequest
+	6,  // 7: grpc.GophKeeperPrivateService.Update:input_type -> grpc.UpdateRequest
+	8,  // 8: grpc.GophKeeperPrivateService.Delete:input_type -> grpc.DeleteRequest
+	1,  // 9: grpc.GophKeeperPrivateService.Create:output_type -> grpc.CreateResponse
+	3,  // 10: grpc.GophKeeperPrivateService.Get:output_type -> grpc.GetResponse
+	5,  // 11: grpc.GophKeeperPrivateService.List:output_type -> grpc.ListResponse
+	7,  // 12: grpc.GophKeeperPrivateService.Update:output_type -> grpc.UpdateResponse
+	9,  // 13: grpc.GophKeeperPrivateService.Delete:output_type -> grpc.DeleteResponse
+	9,  // [9:14] is the sub-list for method output_type
+	4,  // [4:9] is the sub-list for method input_type
+	4,  // [4:4] is the sub-list for extension type_name
+	4,  // [4:4] is the sub-list for extension extendee
+	0,  // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_internal_grpc_private_proto_init() }
