@@ -1,37 +1,41 @@
 package secrets
 
 import (
-	"fmt"
+	"errors"
 )
 
-type TextNote struct {
+var (
+	ErrContentEmpty = errors.New("текст не может быть пустым")
+)
+
+type Text struct {
 	BaseSecret
 
 	Content string
 }
 
-func NewTextNote(userID int, content string) *TextNote {
-	return &TextNote{
+func NewText(userID int, content string) *Text {
+	return &Text{
 		BaseSecret: BaseSecret{UserID: userID},
 		Content:    content,
 	}
 }
 
-func (tn *TextNote) GetBaseSecret() *BaseSecret {
+func (tn *Text) GetBaseSecret() *BaseSecret {
 	return &tn.BaseSecret
 }
 
-func (tn *TextNote) GetType() string {
-	return "TextNote"
+func (tn *Text) GetType() string {
+	return "Text"
 }
 
-func (tn *TextNote) GetPayload() any {
+func (tn *Text) GetPayload() any {
 	return map[string]string{"content": tn.Content}
 }
 
-func (tn *TextNote) Validate() error {
+func (tn *Text) Validate() error {
 	if tn.Content == "" {
-		return fmt.Errorf("Content не может быть пустынм")
+		return ErrContentEmpty
 	}
 
 	return nil

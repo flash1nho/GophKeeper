@@ -11,20 +11,20 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
-func NewDB(databaseURI string) (*pgxpool.Pool, error) {
+func NewDB(databaseDSN string) (*pgxpool.Pool, error) {
 	var pool *pgxpool.Pool = nil
 	var err error
 
-	if databaseURI == "" {
+	if databaseDSN == "" {
 		return nil, fmt.Errorf("не указаны реквизиты для подключения к БД: %w", err)
 	} else {
-		pool, err = connect(databaseURI)
+		pool, err = connect(databaseDSN)
 
 		if err != nil {
 			return nil, err
 		}
 
-		m, err := migrate.New("file://migrations", databaseURI)
+		m, err := migrate.New("file://migrations", databaseDSN)
 
 		if err != nil {
 			return nil, fmt.Errorf("ошибка загрузки миграций: %w", err)
@@ -38,8 +38,8 @@ func NewDB(databaseURI string) (*pgxpool.Pool, error) {
 	return pool, nil
 }
 
-func connect(databaseURI string) (*pgxpool.Pool, error) {
-	pool, err := pgxpool.New(context.Background(), databaseURI)
+func connect(databaseDSN string) (*pgxpool.Pool, error) {
+	pool, err := pgxpool.New(context.Background(), databaseDSN)
 
 	if err != nil {
 		return nil, fmt.Errorf("ошибка подключения к базе данных: %w", err)

@@ -11,7 +11,7 @@ import (
 
 type SettingsObject struct {
 	DatabaseDSN       string
-	CryptoKey         string
+	MasterKey         []byte
 	GrpcServerAddress string
 	Log               *zap.Logger
 }
@@ -28,7 +28,7 @@ func Settings() SettingsObject {
 	return SettingsObject{
 		DatabaseDSN:       os.Getenv("DATABASE_DSN"),
 		GrpcServerAddress: os.Getenv("GRPC_SERVER_ADDRESS"),
-		CryptoKey:         os.Getenv("CRYPTO_KEY"),
+		MasterKey:         []byte(os.Getenv("MASTER_KEY")),
 		Log:               logger.Log,
 	}
 }

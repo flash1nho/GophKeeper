@@ -4,29 +4,37 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"go.uber.org/zap"
 
+	"github.com/flash1nho/GophKeeper/config"
+	"github.com/flash1nho/GophKeeper/internal/facade"
 	"github.com/flash1nho/GophKeeper/internal/models/secrets"
 )
 
 type GrpcPrivateHandler struct {
 	UnimplementedGophKeeperPrivateServiceServer
 
-	Pool *pgxpool.Pool
-	Log  *zap.Logger
+	Pool     *pgxpool.Pool
+	Settings config.SettingsObject
+	facade   *facade.Facade
 }
 
-func (g *GrpcPrivateHandler) TextNoteCreate(ctx context.Context, req *TextNoteCreateRequest) (*CreateResponse, error) {
+func (g *GrpcPrivateHandler) TextCreate(ctx context.Context, req *TextCreateRequest) (*CreateResponse, error) {
 	var response CreateResponse
 
-	textNote := secrets.NewTextNote(1, req.Content)
-	err := secrets.Create(ctx, g.Pool, textNote)
+	userID, err := g.facade.GetUserFromContext(ctx)
 
 	if err != nil {
 		return nil, err
 	}
 
-	response.ID = textNote.ID
+	textNote := secrets.NewText(userID, req.Content)
+	err = secrets.Create(ctx, g.Pool, textNote)
+
+	if err != nil {
+		return nil, err
+	}
+
+	response.ID = int32(textNote.ID)
 
 	return &response, nil
 }

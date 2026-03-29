@@ -5,28 +5,34 @@ import (
 
 	pb "github.com/flash1nho/GophKeeper/internal/grpc"
 
-	"github.com/flash1nho/GophKeeper/app/client/cmd/users"
+	"github.com/flash1nho/GophKeeper/app/client/cmd/secrets"
 	"github.com/flash1nho/GophKeeper/config"
 	"google.golang.org/grpc"
 )
 
-func UsersCommand(settings config.SettingsObject) *cobra.Command {
-	var client pb.GophKeeperPublicServiceClient
+func SecretsCommand(settings config.SettingsObject) *cobra.Command {
+	var client pb.GophKeeperPrivateServiceClient
 	var conn *grpc.ClientConn
 
 	cmd := &cobra.Command{
-		Use:   "users",
-		Short: "Менеджер регистрации и авторизации",
+		Use:   "secrets",
+		Short: "Менеджер хранения данных",
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			var err error
 
-			conn, err = BaseConnection(settings, "")
+			token, err := cmd.Flags().GetString("token")
 
 			if err != nil {
 				settings.Log.Fatal(err.Error())
 			}
 
-			client = pb.NewGophKeeperPublicServiceClient(conn)
+			conn, err = BaseConnection(settings, token)
+
+			if err != nil {
+				settings.Log.Fatal(err.Error())
+			}
+
+			client = pb.NewGophKeeperPrivateServiceClient(conn)
 
 			if client == nil {
 				settings.Log.Fatal("Ошибка при инициализации gRPC клиента")
@@ -39,8 +45,7 @@ func UsersCommand(settings config.SettingsObject) *cobra.Command {
 		},
 	}
 
-	cmd.AddCommand(users.UsersRegisterCommand(&client, settings))
-	cmd.AddCommand(users.UsersLoginCommand(&client, settings))
+	cmd.AddCommand(secrets.SecretsTextCommand(&client, settings))
 
 	return cmd
 }

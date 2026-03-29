@@ -2,47 +2,70 @@ package users
 
 import (
 	"context"
+	"database/sql"
 	"errors"
-	"fmt"
 	"time"
 
+	"github.com/flash1nho/GophKeeper/config"
+	"github.com/flash1nho/GophKeeper/internal/security"
+
 	"github.com/Masterminds/squirrel"
-	"github.com/golang-jwt/jwt"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"golang.org/x/crypto/bcrypt"
+)
+
+var (
+	ErrCredentialsRequired = errors.New("введите логин и пароль")
+	ErrSecretRequired      = errors.New("введите секретное слово")
+	ErrUserAlreadyExists   = errors.New("логин уже существует")
+	ErrUserNotFound        = errors.New("логин не существует")
+	ErrInvalidPassword     = errors.New("неверный пароль")
+	ErrInvalidToken        = errors.New("невалидный токен")
 )
 
 type User struct {
 	ID       int
 	Login    string
 	Password string
-	Secret   string
+	Secret   []byte
 }
 
-func NewUser(login string, password string) *User {
+func NewUser(id int, login string, password string, secret string) *User {
 	return &User{
+		ID:       id,
 		Login:    login,
 		Password: password,
+		Secret:   []byte(secret),
 	}
 }
 
-func (user *User) UserRegister(ctx context.Context, pool *pgxpool.Pool) (string, error) {
+func (user *User) UserRegister(ctx context.Context, pool *pgxpool.Pool, settings config.SettingsObject) (string, error) {
 	if user.Login == "" || user.Password == "" {
-		return "", fmt.Errorf("введите логин и пароль")
+		return "", ErrCredentialsRequired
 	}
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	if len(user.Secret) == 0 {
+		return "", ErrSecretRequired
+	}
+
+	manager := security.NewCryptoManager(settings.MasterKey)
+	passwordHash, err := manager.HashPassword(user.Password)
+
+	if err != nil {
+		return "", err
+	}
+
+	encryptedSecret, err := manager.Encrypt(user.Secret)
 
 	if err != nil {
 		return "", err
 	}
 
 	query, args, err := squirrel.Insert("users").
-		Columns("login", "password", "created_at").
-		Values(user.Login, hashedPassword, time.Now().UTC()).
-		Suffix("RETURNING id").
+		Columns("login", "password_hash", "encrypted_secret", "created_at").
+		Values(user.Login, passwordHash, encryptedSecret, time.Now().UTC()).
+		Suffix("RETURNING id, encrypted_secret").
 		PlaceholderFormat(squirrel.Dollar).
 		ToSql()
 
@@ -50,29 +73,29 @@ func (user *User) UserRegister(ctx context.Context, pool *pgxpool.Pool) (string,
 		return "", err
 	}
 
-	err = pool.QueryRow(ctx, query, args...).Scan(&user.ID)
+	err = pool.QueryRow(ctx, query, args...).Scan(&user.ID, &user.Secret)
 
 	if err != nil {
 		var pgErr *pgconn.PgError
 
 		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
-			return "", fmt.Errorf("логин уже существует")
+			return "", ErrUserAlreadyExists
 		}
 
 		return "", err
 	}
 
-	return user.createToken()
+	return manager.GenerateToken(user.ID, user.Secret)
 }
 
-func (user *User) UserLogin(ctx context.Context, pool *pgxpool.Pool) (string, error) {
+func (user *User) UserLogin(ctx context.Context, pool *pgxpool.Pool, settings config.SettingsObject) (string, error) {
 	if user.Login == "" || user.Password == "" {
-		return "", fmt.Errorf("введите логин и пароль")
+		return "", ErrCredentialsRequired
 	}
 
-	password := user.Password
+	inputPassword := user.Password
 
-	query, args, err := squirrel.Select("id", "password").
+	query, args, err := squirrel.Select("id", "password_hash", "encrypted_secret").
 		From("users").
 		Where(squirrel.Eq{"login": user.Login}).
 		PlaceholderFormat(squirrel.Dollar).
@@ -82,27 +105,56 @@ func (user *User) UserLogin(ctx context.Context, pool *pgxpool.Pool) (string, er
 		return "", err
 	}
 
-	err = pool.QueryRow(ctx, query, args...).Scan(&user.ID, &user.Password)
+	err = pool.QueryRow(ctx, query, args...).Scan(&user.ID, &user.Password, &user.Secret)
 
 	if err != nil {
-		return "", fmt.Errorf("Пользователь не найден")
+		if errors.Is(err, sql.ErrNoRows) {
+			return "", ErrUserNotFound
+		}
+
+		return "", err
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
-	if err != nil {
-		return "", fmt.Errorf("Неверный пароль")
+	manager := security.NewCryptoManager(settings.MasterKey)
+
+	if !manager.CheckPassword(inputPassword, user.Password) {
+		return "", ErrInvalidPassword
 	}
 
-	return user.createToken()
+	return manager.GenerateToken(user.ID, user.Secret)
 }
 
-func (user *User) createToken() (string, error) {
-	claims := jwt.MapClaims{
-		"user_id": user.ID,
-		"exp":     time.Now().Add(time.Hour * 24).Unix(),
+func (user *User) UserVerify(ctx context.Context, pool *pgxpool.Pool, settings config.SettingsObject, token string) error {
+	query, args, err := squirrel.Select("id", "encrypted_secret").
+		From("users").
+		Where(squirrel.Eq{"id": user.ID}).
+		PlaceholderFormat(squirrel.Dollar).
+		ToSql()
+
+	if err != nil {
+		return err
 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	err = pool.QueryRow(ctx, query, args...).Scan(&user.ID, &user.Secret)
 
-	return token.SignedString([]byte(user.Secret))
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrUserNotFound
+		}
+
+		return err
+	}
+
+	manager := security.NewCryptoManager(settings.MasterKey)
+	userID, err := manager.ValidateToken(token, user.Secret)
+
+	if err != nil {
+		return err
+	}
+
+	if userID != user.ID {
+		return ErrInvalidToken
+	}
+
+	return nil
 }

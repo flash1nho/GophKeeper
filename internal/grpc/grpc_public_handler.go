@@ -5,22 +5,22 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/flash1nho/GophKeeper/config"
 	"github.com/flash1nho/GophKeeper/internal/models/users"
-	"go.uber.org/zap"
 )
 
 type GrpcPublicHandler struct {
 	UnimplementedGophKeeperPublicServiceServer
 
-	Pool *pgxpool.Pool
-	Log  *zap.Logger
+	Pool     *pgxpool.Pool
+	Settings config.SettingsObject
 }
 
 func (g *GrpcPublicHandler) Register(ctx context.Context, req *UserRegisterRequest) (*UserRegisterResponse, error) {
 	var response UserRegisterResponse
 
-	user := users.NewUser(req.Login, req.Password)
-	token, err := user.UserRegister(ctx, g.Pool)
+	user := users.NewUser(0, req.Login, req.Password, req.Secret)
+	token, err := user.UserRegister(ctx, g.Pool, g.Settings)
 
 	if err != nil {
 		return nil, err
@@ -34,8 +34,8 @@ func (g *GrpcPublicHandler) Register(ctx context.Context, req *UserRegisterReque
 func (g *GrpcPublicHandler) Login(ctx context.Context, req *UserLoginRequest) (*UserLoginResponse, error) {
 	var response UserLoginResponse
 
-	user := users.NewUser(req.Login, req.Password)
-	token, err := user.UserLogin(ctx, g.Pool)
+	user := users.NewUser(0, req.Login, req.Password, "")
+	token, err := user.UserLogin(ctx, g.Pool, g.Settings)
 
 	if err != nil {
 		return nil, err

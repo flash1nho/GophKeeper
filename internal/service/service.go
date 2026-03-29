@@ -14,7 +14,6 @@ import (
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
 	"google.golang.org/grpc"
 
-	"github.com/flash1nho/GophKeeper/internal/config"
 	"github.com/flash1nho/GophKeeper/internal/interceptors"
 	"google.golang.org/grpc/credentials"
 
@@ -24,16 +23,12 @@ import (
 )
 
 type Service struct {
-	gHandler          *pb.GrpcHandler
-	GrpcServerAddress string
-	log               *zap.Logger
+	Handler *pb.GrpcHandler
 }
 
-func NewService(gHandler *pb.GrpcHandler, settings config.SettingsObject) *Service {
+func NewService(handler *pb.GrpcHandler) *Service {
 	return &Service{
-		gHandler:          gHandler,
-		GrpcServerAddress: settings.GrpcServerAddress,
-		log:               settings.Log,
+		Handler: handler,
 	}
 }
 
@@ -42,48 +37,52 @@ func runGrpcServer(ctx context.Context, s *Service) {
 	certs, err := certs.NewCerts("server")
 
 	if err != nil {
-		s.log.Error("Сертификаты не найдены", zap.Error(err))
+		s.Handler.Settings.Log.Error("Сертификаты не найдены", zap.Error(err))
 	}
 
 	creds, err := credentials.NewServerTLSFromFile(certs.Cert, certs.Key)
 
 	if err != nil {
-		s.log.Error("Не удалось настроить TLS", zap.Error(err))
+		s.Handler.Settings.Log.Error("Не удалось настроить TLS", zap.Error(err))
 	}
 
-	loggingInterceptor := logging.UnaryServerInterceptor(interceptors.InterceptorLogger(s.log))
+	loggingInterceptor := logging.UnaryServerInterceptor(interceptors.InterceptorLogger(s.Handler.Settings.Log))
+	authInterceptor := interceptors.InterceptorAuth(s.Handler.Pool, s.Handler.Settings)
 
 	grpcServer := grpc.NewServer(
 		grpc.Creds(creds),
-		grpc.ChainUnaryInterceptor(loggingInterceptor),
+		grpc.ChainUnaryInterceptor(
+			loggingInterceptor,
+			authInterceptor,
+		),
 	)
 
 	go func() {
-		listen, err := net.Listen("tcp", s.GrpcServerAddress)
+		listen, err := net.Listen("tcp", s.Handler.Settings.GrpcServerAddress)
 
 		if err == nil {
-			pb.RegisterGophKeeperPublicServiceServer(grpcServer, s.gHandler.GrpcPublicHandler)
-			pb.RegisterGophKeeperPrivateServiceServer(grpcServer, s.gHandler.GrpcPrivateHandler)
+			pb.RegisterGophKeeperPublicServiceServer(grpcServer, s.Handler.GrpcPublicHandler)
+			pb.RegisterGophKeeperPrivateServiceServer(grpcServer, s.Handler.GrpcPrivateHandler)
 
-			s.log.Info("сервер gRPC начал работу")
+			s.Handler.Settings.Log.Info("сервер gRPC начал работу")
 
 			if err := grpcServer.Serve(listen); err != nil {
-				s.log.Error("Ошибка при работе gRPC сервера", zap.Error(err))
+				s.Handler.Settings.Log.Error("Ошибка при работе gRPC сервера", zap.Error(err))
 			}
 		} else {
-			s.log.Error("Ошибка при инициализации gRPC listener", zap.Error(err))
+			s.Handler.Settings.Log.Error("Ошибка при инициализации gRPC listener", zap.Error(err))
 		}
 	}()
 
 	select {
 	case err := <-serverErr:
-		s.log.Error(err.Error())
+		s.Handler.Settings.Log.Error(err.Error())
 	case <-ctx.Done():
-		s.log.Info("Завершение работы gRPC сервера")
+		s.Handler.Settings.Log.Info("Завершение работы gRPC сервера")
 
 		grpcServer.GracefulStop()
 
-		s.log.Info("gRPC сервер успешно остановлен")
+		s.Handler.Settings.Log.Info("gRPC сервер успешно остановлен")
 	}
 }
 
@@ -99,12 +98,12 @@ func (s *Service) Run() {
 	})
 
 	if err := g.Wait(); err != nil && !errors.Is(err, context.Canceled) {
-		s.log.Error("Работа завершена с ошибкой", zap.Error(err))
+		s.Handler.Settings.Log.Error("Работа завершена с ошибкой", zap.Error(err))
 	}
 
-	s.log.Info("Сохранение данных в хранилище...")
+	s.Handler.Settings.Log.Info("Сохранение данных в хранилище...")
 
-	s.gHandler.Pool.Close()
+	s.Handler.Pool.Close()
 
-	s.log.Info("Все серверы успешно завершили работу.")
+	s.Handler.Settings.Log.Info("Все серверы успешно завершили работу.")
 }

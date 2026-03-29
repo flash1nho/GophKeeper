@@ -1,22 +1,23 @@
 package grpc
 
 import (
+	"github.com/flash1nho/GophKeeper/config"
+	"github.com/flash1nho/GophKeeper/internal/facade"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"go.uber.org/zap"
 )
 
 type GrpcHandler struct {
 	GrpcPublicHandler  *GrpcPublicHandler
 	GrpcPrivateHandler *GrpcPrivateHandler
 	Pool               *pgxpool.Pool
-	Log                *zap.Logger
+	Settings           config.SettingsObject
 }
 
-func NewGrpcHandler(pool *pgxpool.Pool, log *zap.Logger) *GrpcHandler {
+func NewGrpcHandler(pool *pgxpool.Pool, settings config.SettingsObject, facade *facade.Facade) *GrpcHandler {
 	return &GrpcHandler{
-		GrpcPublicHandler:  &GrpcPublicHandler{Pool: pool, Log: log},
-		GrpcPrivateHandler: &GrpcPrivateHandler{Pool: pool, Log: log},
+		GrpcPublicHandler:  &GrpcPublicHandler{Pool: pool, Settings: settings},
+		GrpcPrivateHandler: &GrpcPrivateHandler{Pool: pool, Settings: settings, facade: facade},
 		Pool:               pool,
-		Log:                log,
+		Settings:           settings,
 	}
 }

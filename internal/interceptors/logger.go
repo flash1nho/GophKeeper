@@ -10,6 +10,7 @@ import (
 
 func InterceptorLogger(l *zap.Logger) logging.Logger {
 	return logging.LoggerFunc(func(_ context.Context, lvl logging.Level, msg string, fields ...any) {
+
 		f := make([]zap.Field, 0, len(fields)/2)
 		for i := 0; i < len(fields); i += 2 {
 			key := fields[i].(string)
@@ -17,19 +18,6 @@ func InterceptorLogger(l *zap.Logger) logging.Logger {
 			f = append(f, zap.Any(key, value))
 		}
 
-		logger := l.WithOptions(zap.AddCallerSkip(1))
-
-		switch lvl {
-		case logging.LevelDebug:
-			logger.Debug(msg, f...)
-		case logging.LevelInfo:
-			logger.Info(msg, f...)
-		case logging.LevelWarn:
-			logger.Warn(msg, f...)
-		case logging.LevelError:
-			logger.Error(msg, f...)
-		default:
-			logger.Info(msg, f...)
-		}
+		l.Log(zap.InfoLevel, msg, f...)
 	})
 }

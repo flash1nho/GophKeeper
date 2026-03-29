@@ -1,9 +1,9 @@
-CREATE TYPE secrets_type AS ENUM ('BankCard', 'FileUpload', 'TextNote');
+CREATE TYPE secrets_type AS ENUM ('Card', 'File', 'Text');
 
 CREATE TABLE secrets (
     id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     user_id INTEGER NOT NULL,
-    properties JSONB NOT NULL DEFAULT '{}',
+    encrypted_data BYTEA NOT NULL,
     type secrets_type NOT NULL,
     created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL
 );

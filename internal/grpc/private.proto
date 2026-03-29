@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package grpc;
+
+option go_package = "grpc/grpc";
+
+service GophKeeperPrivateService {
+  rpc TextCreate (TextCreateRequest) returns (CreateResponse);
+}
+
+message TextCreateRequest {
+  string content = 2;
+}
+
+message CreateResponse {
+  int32 id = 1;
+}
