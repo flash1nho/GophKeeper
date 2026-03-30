@@ -23,24 +23,24 @@ jobs:
     strategy:
       matrix:
         go-version: ['1.25.0']
-    
+
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
-      
+
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version: ${{ matrix.go-version }}
           cache: true
-      
+
       - name: Download dependencies
         run: |
           go mod download
           go mod verify
-      
+
       - name: Run server tests
         working-directory: ./app/server
         run: |
@@ -48,7 +48,7 @@ jobs:
           go tool cover -func=coverage.out
         env:
           CGO_ENABLED: 1
-      
+
       - name: Run client tests
         working-directory: ./app/client
         run: |
@@ -56,7 +56,7 @@ jobs:
           go tool cover -func=coverage.out
         env:
           CGO_ENABLED: 1
-      
+
       - name: Upload server coverage to Codecov
         uses: codecov/codecov-action@v3
         with:
@@ -64,7 +64,7 @@ jobs:
           flags: server
           name: server-coverage
           fail_ci_if_error: false
-      
+
       - name: Upload client coverage to Codecov
         uses: codecov/codecov-action@v3
         with:
@@ -76,31 +76,31 @@ jobs:
   lint:
     name: Lint & Code Quality
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
-      
+        uses: actions/checkout@v6
+
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version: '1.25.0'
           cache: true
-      
+
       - name: Run golangci-lint for server
-        uses: golangci/golangci-lint-action@v3
+        uses: golangci/golangci-lint-action@v9
         with:
           working-directory: ./app/server
           version: latest
           args: --timeout 5m
-      
+
       - name: Run golangci-lint for client
-        uses: golangci/golangci-lint-action@v3
+        uses: golangci/golangci-lint-action@v9
         with:
           working-directory: ./app/client
           version: latest
           args: --timeout 5m
-      
+
       - name: Run go fmt check
         run: |
           if [ -n "$(go fmt ./...)" ]; then
@@ -111,22 +111,22 @@ jobs:
   sec:
     name: Security Scan
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
-      
+        uses: actions/checkout@v6
+
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version: '1.25.0'
           cache: true
-      
+
       - name: Run gosec security scanner
         uses: securego/gosec@master
         with:
           args: '-no-fail -fmt json -out results.json ./app/...'
-      
+
       - name: Upload security scan results
         if: always()
         uses: github/codeql-action/upload-sarif@v2
@@ -146,17 +146,17 @@ jobs:
             arch: arm64
           - os: darwin
             arch: arm64
-    
+
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
-      
+        uses: actions/checkout@v6
+
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version: '1.25.0'
           cache: true
-      
+
       - name: Build server for ${{ matrix.os }}/${{ matrix.arch }}
         working-directory: ./app/server
         env:
@@ -165,7 +165,7 @@ jobs:
           CGO_ENABLED: 0
         run: |
           go build -v -o ../../bin/gophkeeper-server-${{ matrix.os }}-${{ matrix.arch }} .
-      
+
       - name: Build client for ${{ matrix.os }}/${{ matrix.arch }}
         working-directory: ./app/client
         env:
@@ -178,7 +178,7 @@ jobs:
   integration-test:
     name: Integration Tests (Docker)
     runs-on: ubuntu-latest
-    
+
     services:
       postgres:
         image: postgres:15-alpine
@@ -193,24 +193,24 @@ jobs:
           --health-retries 5
         ports:
           - 5432:5432
-    
+
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
-      
+        uses: actions/checkout@v6
+
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version: '1.25.0'
           cache: true
-      
+
       - name: Wait for PostgreSQL
         run: |
           until pg_isready -h localhost -p 5432 -U gophkeeper; do
             echo "Waiting for PostgreSQL..."
             sleep 1
           done
-      
+
       - name: Run integration tests
         working-directory: ./app/server
         run: |
@@ -228,28 +228,28 @@ jobs:
     runs-on: ubuntu-latest
     needs: [test]
     if: always()
-    
+
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
-      
+        uses: actions/checkout@v6
+
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version: '1.25.0'
           cache: true
-      
+
       - name: Calculate combined coverage
         run: |
           echo "=== Server Coverage ===" >> $GITHUB_STEP_SUMMARY
           cd app/server && go test -v -coverprofile=coverage.out ./... && \
             echo "Coverage: $(go tool cover -func=coverage.out | tail -1)" >> $GITHUB_STEP_SUMMARY || true
-          
+
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "=== Client Coverage ===" >> $GITHUB_STEP_SUMMARY
           cd ../client && go test -v -coverprofile=coverage.out ./... && \
             echo "Coverage: $(go tool cover -func=coverage.out | tail -1)" >> $GITHUB_STEP_SUMMARY || true
-      
+
       - name: Comment PR with coverage
         if: github.event_name == 'pull_request'
         uses: actions/github-script@v7
@@ -269,7 +269,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [test, lint, sec, build]
     if: always()
-    
+
     steps:
       - name: Check workflow status
         id: check
@@ -282,7 +282,7 @@ jobs:
           else
             echo "status=success" >> $GITHUB_OUTPUT
           fi
-      
+
       - name: Workflow status summary
         run: |
           echo "### Workflow Status Summary" >> $GITHUB_STEP_SUMMARY
