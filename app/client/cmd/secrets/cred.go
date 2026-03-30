@@ -18,6 +18,7 @@ func CredCommand(client *pb.GophKeeperPrivateServiceClient, settings config.Sett
 	cmd.AddCommand(actions.SecretsGetCommand(client, settings))
 	cmd.AddCommand(actions.SecretsListCommand(client, settings))
 	cmd.AddCommand(actions.SecretsUpdateCommand(client, settings))
+	cmd.AddCommand(actions.SecretsDeleteCommand(client, settings))
 
 	return cmd
 }

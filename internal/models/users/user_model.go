@@ -11,6 +11,7 @@ import (
 
 	"github.com/Masterminds/squirrel"
 	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -110,7 +111,7 @@ func (user *User) UserLogin(ctx context.Context, pool *pgxpool.Pool, settings co
 	err = pool.QueryRow(ctx, query, args...).Scan(&user.ID, &user.Password, &user.Secret)
 
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return "", ErrUserNotFound
 		}
 

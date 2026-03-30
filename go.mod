@@ -3,6 +3,7 @@ module github.com/flash1nho/GophKeeper
 go 1.25.0
 
 require (
+	dario.cat/mergo v1.0.2
 	github.com/Masterminds/squirrel v1.5.4
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/golang-migrate/migrate/v4 v4.19.0

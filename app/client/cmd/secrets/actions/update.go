@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/flash1nho/GophKeeper/app/client/cmd/secrets/print"
 	"github.com/flash1nho/GophKeeper/config"
 	pb "github.com/flash1nho/GophKeeper/internal/grpc"
 	"google.golang.org/grpc/status"
@@ -53,7 +54,7 @@ func SecretsUpdateCommand(client *pb.GophKeeperPrivateServiceClient, settings co
 				Type: Type,
 			}
 
-			_, err = (*client).Update(cmd.Context(), request)
+			response, err := (*client).Update(cmd.Context(), request)
 
 			if err != nil {
 				if statusErr, ok := status.FromError(err); ok {
@@ -65,7 +66,9 @@ func SecretsUpdateCommand(client *pb.GophKeeperPrivateServiceClient, settings co
 				return
 			}
 
-			fmt.Printf("Обновлено!")
+			fmt.Println("Обновлено!")
+			fmt.Println("---")
+			print.Result(response.Secrets.Values)
 		},
 	}
 

@@ -9,7 +9,7 @@ import (
 
 var (
 	ErrLoginEmpty      = errors.New("'login' не может быть пустым")
-	ErrPasswordEmpty   = errors.New("'login' не может быть пустым")
+	ErrPasswordEmpty   = errors.New("'password' не может быть пустым")
 	ErrUpdateCredEmpty = errors.New("укажите хотя бы одно из доступных атрибутов для обновления: 'login' или 'password'")
 )
 

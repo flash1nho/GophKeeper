@@ -77,7 +77,7 @@ func (x *CreateRequest) GetType() string {
 
 type CreateResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	ID            int32                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	Secrets       *_struct.ListValue     `protobuf:"bytes,1,opt,name=secrets,proto3" json:"secrets,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -112,11 +112,11 @@ func (*CreateResponse) Descriptor() ([]byte, []int) {
 	return file_internal_grpc_private_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *CreateResponse) GetID() int32 {
+func (x *CreateResponse) GetSecrets() *_struct.ListValue {
 	if x != nil {
-		return x.ID
+		return x.Secrets
 	}
-	return 0
+	return nil
 }
 
 type GetRequest struct {
@@ -173,7 +173,7 @@ func (x *GetRequest) GetType() string {
 
 type GetResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Secret        *_struct.Struct        `protobuf:"bytes,1,opt,name=secret,proto3" json:"secret,omitempty"`
+	Secrets       *_struct.ListValue     `protobuf:"bytes,1,opt,name=secrets,proto3" json:"secrets,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -208,9 +208,9 @@ func (*GetResponse) Descriptor() ([]byte, []int) {
 	return file_internal_grpc_private_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *GetResponse) GetSecret() *_struct.Struct {
+func (x *GetResponse) GetSecrets() *_struct.ListValue {
 	if x != nil {
-		return x.Secret
+		return x.Secrets
 	}
 	return nil
 }
@@ -365,6 +365,7 @@ func (x *UpdateRequest) GetType() string {
 
 type UpdateResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
+	Secrets       *_struct.ListValue     `protobuf:"bytes,1,opt,name=secrets,proto3" json:"secrets,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -397,6 +398,13 @@ func (x *UpdateResponse) ProtoReflect() protoreflect.Message {
 // Deprecated: Use UpdateResponse.ProtoReflect.Descriptor instead.
 func (*UpdateResponse) Descriptor() ([]byte, []int) {
 	return file_internal_grpc_private_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *UpdateResponse) GetSecrets() *_struct.ListValue {
+	if x != nil {
+		return x.Secrets
+	}
+	return nil
 }
 
 type DeleteRequest struct {
@@ -494,15 +502,15 @@ const file_internal_grpc_private_proto_rawDesc = "" +
 	"\x1binternal/grpc/private.proto\x12\x04grpc\x1a\x1cgoogle/protobuf/struct.proto\"P\n" +
 	"\rCreateRequest\x12+\n" +
 	"\x04data\x18\x01 \x01(\v2\x17.google.protobuf.StructR\x04data\x12\x12\n" +
-	"\x04type\x18\x02 \x01(\tR\x04type\" \n" +
-	"\x0eCreateResponse\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\x05R\x02id\"0\n" +
+	"\x04type\x18\x02 \x01(\tR\x04type\"F\n" +
+	"\x0eCreateResponse\x124\n" +
+	"\asecrets\x18\x01 \x01(\v2\x1a.google.protobuf.ListValueR\asecrets\"0\n" +
 	"\n" +
 	"GetRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x05R\x02id\x12\x12\n" +
-	"\x04type\x18\x02 \x01(\tR\x04type\">\n" +
-	"\vGetResponse\x12/\n" +
-	"\x06secret\x18\x01 \x01(\v2\x17.google.protobuf.StructR\x06secret\"!\n" +
+	"\x04type\x18\x02 \x01(\tR\x04type\"C\n" +
+	"\vGetResponse\x124\n" +
+	"\asecrets\x18\x01 \x01(\v2\x1a.google.protobuf.ListValueR\asecrets\"!\n" +
 	"\vListRequest\x12\x12\n" +
 	"\x04type\x18\x01 \x01(\tR\x04type\"D\n" +
 	"\fListResponse\x124\n" +
@@ -510,8 +518,9 @@ const file_internal_grpc_private_proto_rawDesc = "" +
 	"\rUpdateRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x05R\x02id\x12+\n" +
 	"\x04data\x18\x02 \x01(\v2\x17.google.protobuf.StructR\x04data\x12\x12\n" +
-	"\x04type\x18\x03 \x01(\tR\x04type\"\x10\n" +
-	"\x0eUpdateResponse\"3\n" +
+	"\x04type\x18\x03 \x01(\tR\x04type\"F\n" +
+	"\x0eUpdateResponse\x124\n" +
+	"\asecrets\x18\x01 \x01(\v2\x1a.google.protobuf.ListValueR\asecrets\"3\n" +
 	"\rDeleteRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x05R\x02id\x12\x12\n" +
 	"\x04type\x18\x02 \x01(\tR\x04type\"\x10\n" +
@@ -552,24 +561,26 @@ var file_internal_grpc_private_proto_goTypes = []any{
 }
 var file_internal_grpc_private_proto_depIDxs = []int32{
 	10, // 0: grpc.CreateRequest.data:type_name -> google.protobuf.Struct
-	10, // 1: grpc.GetResponse.secret:type_name -> google.protobuf.Struct
-	11, // 2: grpc.ListResponse.secrets:type_name -> google.protobuf.ListValue
-	10, // 3: grpc.UpdateRequest.data:type_name -> google.protobuf.Struct
-	0,  // 4: grpc.GophKeeperPrivateService.Create:input_type -> grpc.CreateRequest
-	2,  // 5: grpc.GophKeeperPrivateService.Get:input_type -> grpc.GetRequest
-	4,  // 6: grpc.GophKeeperPrivateService.List:input_type -> grpc.ListRequest
-	6,  // 7: grpc.GophKeeperPrivateService.Update:input_type -> grpc.UpdateRequest
-	8,  // 8: grpc.GophKeeperPrivateService.Delete:input_type -> grpc.DeleteRequest
-	1,  // 9: grpc.GophKeeperPrivateService.Create:output_type -> grpc.CreateResponse
-	3,  // 10: grpc.GophKeeperPrivateService.Get:output_type -> grpc.GetResponse
-	5,  // 11: grpc.GophKeeperPrivateService.List:output_type -> grpc.ListResponse
-	7,  // 12: grpc.GophKeeperPrivateService.Update:output_type -> grpc.UpdateResponse
-	9,  // 13: grpc.GophKeeperPrivateService.Delete:output_type -> grpc.DeleteResponse
-	9,  // [9:14] is the sub-list for method output_type
-	4,  // [4:9] is the sub-list for method input_type
-	4,  // [4:4] is the sub-list for extension type_name
-	4,  // [4:4] is the sub-list for extension extendee
-	0,  // [0:4] is the sub-list for field type_name
+	11, // 1: grpc.CreateResponse.secrets:type_name -> google.protobuf.ListValue
+	11, // 2: grpc.GetResponse.secrets:type_name -> google.protobuf.ListValue
+	11, // 3: grpc.ListResponse.secrets:type_name -> google.protobuf.ListValue
+	10, // 4: grpc.UpdateRequest.data:type_name -> google.protobuf.Struct
+	11, // 5: grpc.UpdateResponse.secrets:type_name -> google.protobuf.ListValue
+	0,  // 6: grpc.GophKeeperPrivateService.Create:input_type -> grpc.CreateRequest
+	2,  // 7: grpc.GophKeeperPrivateService.Get:input_type -> grpc.GetRequest
+	4,  // 8: grpc.GophKeeperPrivateService.List:input_type -> grpc.ListRequest
+	6,  // 9: grpc.GophKeeperPrivateService.Update:input_type -> grpc.UpdateRequest
+	8,  // 10: grpc.GophKeeperPrivateService.Delete:input_type -> grpc.DeleteRequest
+	1,  // 11: grpc.GophKeeperPrivateService.Create:output_type -> grpc.CreateResponse
+	3,  // 12: grpc.GophKeeperPrivateService.Get:output_type -> grpc.GetResponse
+	5,  // 13: grpc.GophKeeperPrivateService.List:output_type -> grpc.ListResponse
+	7,  // 14: grpc.GophKeeperPrivateService.Update:output_type -> grpc.UpdateResponse
+	9,  // 15: grpc.GophKeeperPrivateService.Delete:output_type -> grpc.DeleteResponse
+	11, // [11:16] is the sub-list for method output_type
+	6,  // [6:11] is the sub-list for method input_type
+	6,  // [6:6] is the sub-list for extension type_name
+	6,  // [6:6] is the sub-list for extension extendee
+	0,  // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_internal_grpc_private_proto_init() }
