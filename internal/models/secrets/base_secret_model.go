@@ -48,6 +48,10 @@ type Secret interface {
 	UpdateValidate() error
 }
 
+func (b *BaseSecret) GetBaseSecret() *BaseSecret {
+	return b
+}
+
 func Create(ctx context.Context, pool *pgxpool.Pool, s Secret) ([]any, error) {
 	err := s.CreateValidate()
 

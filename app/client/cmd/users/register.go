@@ -30,7 +30,7 @@ func UsersRegisterCommand(client *pb.GophKeeperPublicServiceClient, settings con
 
 			if err != nil {
 				if statusErr, ok := status.FromError(err); ok {
-					fmt.Printf("Ошибка регистрации: %s\n", statusErr.Message())
+					fmt.Println(statusErr.Message())
 				} else {
 					settings.Log.Error(err.Error())
 				}

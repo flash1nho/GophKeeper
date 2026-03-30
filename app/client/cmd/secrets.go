@@ -1,16 +1,13 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-
-	pb "github.com/flash1nho/GophKeeper/internal/grpc"
+	"google.golang.org/grpc"
 
 	"github.com/flash1nho/GophKeeper/app/client/cmd/secrets"
 	"github.com/flash1nho/GophKeeper/config"
-	"google.golang.org/grpc"
+	pb "github.com/flash1nho/GophKeeper/internal/grpc"
 )
 
 func SecretsCommand(settings config.SettingsObject) *cobra.Command {
@@ -21,21 +18,13 @@ func SecretsCommand(settings config.SettingsObject) *cobra.Command {
 		Use:   "secrets",
 		Short: "Менеджер хранения данных",
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
-			var err error
-
 			token := viper.GetString("token")
 
 			if token == "" {
-				fmt.Println("Токен не найден. Выполните вход!")
-
-				return
+				settings.Log.Fatal("Токен не найден. Сначала выполните вход (login)!")
 			}
 
-			if err != nil {
-				settings.Log.Fatal(err.Error())
-			}
-
-			conn, err = BaseConnection(settings, token)
+			conn, err := BaseConnection(settings, token)
 
 			if err != nil {
 				settings.Log.Fatal(err.Error())
@@ -44,18 +33,21 @@ func SecretsCommand(settings config.SettingsObject) *cobra.Command {
 			client = pb.NewGophKeeperPrivateServiceClient(conn)
 
 			if client == nil {
-				settings.Log.Fatal("Ошибка при инициализации gRPC клиента")
+				settings.Log.Fatal("Не удалось инициализировать gRPC клиента")
 			}
 		},
 		PersistentPostRun: func(cmd *cobra.Command, args []string) {
-			if err := conn.Close(); err != nil {
-				settings.Log.Fatal(err.Error())
+			if conn != nil {
+				if err := conn.Close(); err != nil {
+					settings.Log.Fatal(err.Error())
+				}
 			}
 		},
 	}
 
 	cmd.AddCommand(secrets.TextCommand(&client, settings))
 	cmd.AddCommand(secrets.CredCommand(&client, settings))
+	cmd.AddCommand(secrets.CardCommand(&client, settings))
 
 	return cmd
 }

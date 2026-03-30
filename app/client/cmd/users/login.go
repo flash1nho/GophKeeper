@@ -28,7 +28,7 @@ func UsersLoginCommand(client *pb.GophKeeperPublicServiceClient, settings config
 
 			if err != nil {
 				if statusErr, ok := status.FromError(err); ok {
-					fmt.Printf("Ошибка авторизации: %s\n", statusErr.Message())
+					fmt.Println(statusErr.Message())
 				} else {
 					settings.Log.Error(err.Error())
 				}

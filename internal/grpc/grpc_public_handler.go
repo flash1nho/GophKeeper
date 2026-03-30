@@ -12,13 +12,13 @@ import (
 type GrpcPublicHandler struct {
 	UnimplementedGophKeeperPublicServiceServer
 
-	Pool     *pgxpool.Pool
-	Settings config.SettingsObject
+	pool     *pgxpool.Pool
+	settings config.SettingsObject
 }
 
 func (g *GrpcPublicHandler) Register(ctx context.Context, req *UserRegisterRequest) (*UserRegisterResponse, error) {
 	user := users.NewUser(req.Login, req.Password)
-	token, err := user.UserRegister(ctx, g.Pool, g.Settings, req.Secret)
+	token, err := user.UserRegister(ctx, g.pool, g.settings, req.Secret)
 
 	if err != nil {
 		return nil, err
@@ -29,7 +29,7 @@ func (g *GrpcPublicHandler) Register(ctx context.Context, req *UserRegisterReque
 
 func (g *GrpcPublicHandler) Login(ctx context.Context, req *UserLoginRequest) (*UserLoginResponse, error) {
 	user := users.NewUser(req.Login, req.Password)
-	token, err := user.UserLogin(ctx, g.Pool, g.Settings)
+	token, err := user.UserLogin(ctx, g.pool, g.settings)
 
 	if err != nil {
 		return nil, err

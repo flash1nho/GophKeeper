@@ -2,65 +2,62 @@ package actions
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/spf13/cobra"
 
-	"github.com/flash1nho/GophKeeper/app/client/cmd/secrets/print"
+	"github.com/flash1nho/GophKeeper/app/client/helpers"
 	"github.com/flash1nho/GophKeeper/config"
 	pb "github.com/flash1nho/GophKeeper/internal/grpc"
-	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/structpb"
-
-	"github.com/iancoleman/strcase"
 )
 
-func SecretsCreateCommand(client *pb.GophKeeperPrivateServiceClient, settings config.SettingsObject) *cobra.Command {
+// Убрали указатель у клиента, так как это интерфейс
+func SecretsCreateCommand(client *pb.GophKeeperPrivateServiceClient, settings config.SettingsObject, fields []helpers.FieldInfo) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:                "create",
-		Short:              "Создание секрета",
-		DisableFlagParsing: true,
+		Use:   "create",
+		Short: "Создание секрета",
 		Run: func(cmd *cobra.Command, args []string) {
-			dataMap := make(map[string]interface{})
-
-			for _, arg := range args {
-				kv := strings.SplitN(arg, "=", 2)
-
-				if len(kv) == 2 {
-					field := strings.TrimPrefix(kv[0], "--")
-					dataMap[field] = kv[1]
-				}
-			}
-
-			Data, err := structpb.NewStruct(dataMap)
+			_, data, secretType, err := helpers.ArgsParse(cmd)
 
 			if err != nil {
 				settings.Log.Fatal(err.Error())
 			}
 
-			Type := strcase.ToCamel(cmd.Parent().Name())
-
 			request := &pb.CreateRequest{
-				Data: Data,
-				Type: Type,
+				Data: data,
+				Type: secretType,
+			}
+
+			if client == nil || *client == nil {
+				settings.Log.Fatal("gRPC клиент не инициализирован")
 			}
 
 			response, err := (*client).Create(cmd.Context(), request)
 
 			if err != nil {
-				if statusErr, ok := status.FromError(err); ok {
-					fmt.Printf("Ошибка создания секрета: %s\n", statusErr.Message())
-				} else {
-					settings.Log.Error(err.Error())
-				}
+				helpers.ErrorHandler(settings.Log, err)
 
 				return
 			}
 
-			fmt.Println("Создано!")
+			fmt.Println("✅ Создано")
 			fmt.Println("---")
-			print.Result(response.Secrets.Values)
+
+			if response != nil && response.Secrets != nil && response.Secrets.Values != nil {
+				helpers.PrintResult(response.Secrets.Values)
+			}
 		},
+	}
+
+	for _, field := range fields {
+		switch field.Type {
+		case "string":
+			var str string
+
+			cmd.Flags().StringVarP(&str, field.Key, "", str, fmt.Sprintf("%s (обязательно)", field.Key))
+			cmd.MarkFlagRequired(field.Key)
+		default:
+			settings.Log.Fatal("недопустимый тип для создания флага")
+		}
 	}
 
 	return cmd

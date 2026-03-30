@@ -2,15 +2,13 @@ package secrets
 
 import (
 	"errors"
+	"fmt"
+	"strings"
 
-	"github.com/flash1nho/GophKeeper/config"
 	"github.com/flash1nho/GophKeeper/internal/security"
 )
 
-var (
-	ErrContentEmpty    = errors.New("'content' не может быть пустым")
-	ErrUpdateTextEmpty = errors.New("укажите атрибут для обновления: 'content'")
-)
+var ErrInvalidTextData = errors.New("недопустимые текстовые данные")
 
 type Text struct {
 	BaseSecret
@@ -18,38 +16,34 @@ type Text struct {
 	Content string `json:"content"`
 }
 
-func NewText(userID int, settings config.SettingsObject) *Text {
+func NewText(userID int, masterKey []byte) *Text {
 	return &Text{
 		BaseSecret: BaseSecret{
 			UserID:        userID,
-			CryptoManager: security.NewCryptoManager(settings.MasterKey),
+			CryptoManager: security.NewCryptoManager(masterKey),
 		},
 	}
 }
 
-func (t *Text) GetBaseSecret() *BaseSecret {
-	return &t.BaseSecret
-}
-
-func (t *Text) GetType() string {
+func (s *Text) GetType() string {
 	return "Text"
 }
 
-func (t *Text) GetSecret() any {
-	return t
+func (s *Text) GetSecret() any {
+	return s
 }
 
-func (t *Text) CreateValidate() error {
-	if t.Content == "" {
-		return ErrContentEmpty
+func (s *Text) CreateValidate() error {
+	if strings.TrimSpace(s.Content) == "" {
+		return fmt.Errorf("%w: поле 'content' не может быть пустым", ErrInvalidTextData)
 	}
 
 	return nil
 }
 
-func (t *Text) UpdateValidate() error {
-	if t.Content == "" {
-		return ErrUpdateTextEmpty
+func (s *Text) UpdateValidate() error {
+	if strings.TrimSpace(s.Content) == "" {
+		return errors.New("нужно указать атрибут для обновления: 'content'")
 	}
 
 	return nil

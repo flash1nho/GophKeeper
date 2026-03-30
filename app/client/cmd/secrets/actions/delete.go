@@ -2,64 +2,46 @@ package actions
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/spf13/cobra"
 
+	"github.com/flash1nho/GophKeeper/app/client/helpers"
 	"github.com/flash1nho/GophKeeper/config"
 	pb "github.com/flash1nho/GophKeeper/internal/grpc"
-	"google.golang.org/grpc/status"
-
-	"github.com/iancoleman/strcase"
 )
 
 func SecretsDeleteCommand(client *pb.GophKeeperPrivateServiceClient, settings config.SettingsObject) *cobra.Command {
-	id := 0
+	var id int
 
 	cmd := &cobra.Command{
-		Use:                "delete",
-		Short:              "Удаление секрета",
-		DisableFlagParsing: true,
+		Use:   "delete",
+		Short: "Удаление секрета",
 		Run: func(cmd *cobra.Command, args []string) {
-			dataMap := make(map[string]interface{})
+			id, _, secretType, err := helpers.ArgsParse(cmd)
 
-			for _, arg := range args {
-				kv := strings.SplitN(arg, "=", 2)
-
-				if len(kv) == 2 {
-					field := strings.TrimPrefix(kv[0], "--")
-					dataMap[field] = kv[1]
-				}
+			if err != nil {
+				settings.Log.Fatal(err.Error())
 			}
-
-			idStr, ok := dataMap["id"].(string)
-
-			if ok {
-				fmt.Sscanf(idStr, "%d", &id)
-			}
-
-			Type := strcase.ToCamel(cmd.Parent().Name())
 
 			request := &pb.DeleteRequest{
 				ID:   int32(id),
-				Type: Type,
+				Type: secretType,
 			}
 
-			_, err := (*client).Delete(cmd.Context(), request)
+			_, err = (*client).Delete(cmd.Context(), request)
 
 			if err != nil {
-				if statusErr, ok := status.FromError(err); ok {
-					fmt.Printf("Ошибка просмотра секрета: %s\n", statusErr.Message())
-				} else {
-					settings.Log.Error(err.Error())
-				}
+				helpers.ErrorHandler(settings.Log, err)
 
 				return
 			}
 
-			fmt.Printf("Секрет с ID=%d удален!\n", id)
+			fmt.Printf("✅ Секрет с id=%d успешно удален!\n", id)
 		},
 	}
+
+	cmd.Flags().IntVarP(&id, "id", "", id, "id (обязательно)")
+	cmd.MarkFlagRequired("id")
 
 	return cmd
 }

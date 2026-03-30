@@ -15,8 +15,8 @@ type GrpcHandler struct {
 
 func NewGrpcHandler(pool *pgxpool.Pool, settings config.SettingsObject, facade *facade.Facade) *GrpcHandler {
 	return &GrpcHandler{
-		GrpcPublicHandler:  &GrpcPublicHandler{Pool: pool, Settings: settings},
-		GrpcPrivateHandler: &GrpcPrivateHandler{Pool: pool, Settings: settings, facade: facade},
+		GrpcPublicHandler:  &GrpcPublicHandler{pool: pool, settings: settings},
+		GrpcPrivateHandler: &GrpcPrivateHandler{pool: pool, settings: settings, facade: facade},
 		Pool:               pool,
 		Settings:           settings,
 	}

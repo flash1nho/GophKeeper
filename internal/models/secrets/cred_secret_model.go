@@ -2,16 +2,13 @@ package secrets
 
 import (
 	"errors"
+	"fmt"
+	"strings"
 
-	"github.com/flash1nho/GophKeeper/config"
 	"github.com/flash1nho/GophKeeper/internal/security"
 )
 
-var (
-	ErrLoginEmpty      = errors.New("'login' не может быть пустым")
-	ErrPasswordEmpty   = errors.New("'password' не может быть пустым")
-	ErrUpdateCredEmpty = errors.New("укажите хотя бы одно из доступных атрибутов для обновления: 'login' или 'password'")
-)
+var ErrInvalidCredData = errors.New("недопустимые учетные данные")
 
 type Cred struct {
 	BaseSecret
@@ -20,42 +17,44 @@ type Cred struct {
 	Password string `json:"password"`
 }
 
-func NewCred(userID int, settings config.SettingsObject) *Cred {
+func NewCred(userID int, masterKey []byte) *Cred {
 	return &Cred{
 		BaseSecret: BaseSecret{
 			UserID:        userID,
-			CryptoManager: security.NewCryptoManager(settings.MasterKey),
+			CryptoManager: security.NewCryptoManager(masterKey),
 		},
 	}
 }
 
-func (t *Cred) GetBaseSecret() *BaseSecret {
-	return &t.BaseSecret
-}
-
-func (t *Cred) GetType() string {
+func (s *Cred) GetType() string {
 	return "Cred"
 }
 
-func (t *Cred) GetSecret() any {
-	return t
+func (s *Cred) GetSecret() any {
+	return s
 }
 
-func (t *Cred) CreateValidate() error {
-	if t.Login == "" {
-		return ErrLoginEmpty
+func (s *Cred) CreateValidate() error {
+	fields := []struct {
+		name  string
+		value string
+	}{
+		{"login", s.Login},
+		{"password", s.Password},
 	}
 
-	if t.Password == "" {
-		return ErrPasswordEmpty
+	for _, f := range fields {
+		if strings.TrimSpace(f.value) == "" {
+			return fmt.Errorf("%w: поле '%s' не может быть пустым", ErrInvalidCredData, f.name)
+		}
 	}
 
 	return nil
 }
 
-func (t *Cred) UpdateValidate() error {
-	if t.Login == "" && t.Password == "" {
-		return ErrUpdateCredEmpty
+func (s *Cred) UpdateValidate() error {
+	if strings.TrimSpace(s.Login) == "" && strings.TrimSpace(s.Password) == "" {
+		return errors.New("нужно указать хотя бы один атрибут для обновления: 'login', 'password'")
 	}
 
 	return nil
