@@ -22,16 +22,16 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go-version: ['1.20', '1.21']
+        go-version: ['1.25.0']
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
       
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version: ${{ matrix.go-version }}
           cache: true
@@ -79,12 +79,12 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
-          go-version: '1.21'
+          go-version: '1.25.0'
           cache: true
       
       - name: Run golangci-lint for server
@@ -114,12 +114,12 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
-          go-version: '1.21'
+          go-version: '1.25.0'
           cache: true
       
       - name: Run gosec security scanner
@@ -149,12 +149,12 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
-          go-version: '1.21'
+          go-version: '1.25.0'
           cache: true
       
       - name: Build server for ${{ matrix.os }}/${{ matrix.arch }}
@@ -184,7 +184,7 @@ jobs:
         image: postgres:15-alpine
         env:
           POSTGRES_USER: gophkeeper
-          POSTGRES_PASSWORD: testpass123
+          POSTGRES_PASSWORD: gophkeeper
           POSTGRES_DB: gophkeeper_test
         options: >-
           --health-cmd pg_isready
@@ -196,12 +196,12 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
-          go-version: '1.21'
+          go-version: '1.25.0'
           cache: true
       
       - name: Wait for PostgreSQL
@@ -219,7 +219,7 @@ jobs:
           DB_HOST: localhost
           DB_PORT: 5432
           DB_USER: gophkeeper
-          DB_PASSWORD: testpass123
+          DB_PASSWORD: gophkeeper
           DB_NAME: gophkeeper_test
           DB_SSLMODE: disable
 
@@ -231,12 +231,12 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
-          go-version: '1.21'
+          go-version: '1.25.0'
           cache: true
       
       - name: Calculate combined coverage
