@@ -12,6 +12,8 @@ service GophKeeperPrivateService {
   rpc List (ListRequest) returns (ListResponse);
   rpc Update (UpdateRequest) returns (UpdateResponse);
   rpc Delete (DeleteRequest) returns (DeleteResponse);
+  rpc Upload(stream UploadRequest) returns (UploadResponse);
+  rpc Download(DownloadRequest) returns (stream DownloadResponse);
 }
 
 message CreateRequest {
@@ -56,4 +58,31 @@ message DeleteRequest {
 }
 
 message DeleteResponse {
+}
+
+message UploadRequest {
+  oneof data {
+    Metadata metadata = 1;
+    bytes chunk = 2;
+  }
+}
+
+message Metadata {
+  string file_name = 1;
+  string file_content_type = 2;
+  int64 file_size = 3;
+  int64 file_offset = 4;
+}
+
+message UploadResponse {
+  google.protobuf.ListValue secrets = 1;
+}
+
+message DownloadRequest {
+  int32 id = 1;
+  int64 file_offset = 2;
+}
+
+message DownloadResponse {
+  bytes chunk = 1;
 }

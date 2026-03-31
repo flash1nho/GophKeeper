@@ -2,6 +2,8 @@ package secrets
 
 import (
 	"context"
+	"crypto/aes"
+	"crypto/cipher"
 	"encoding/json"
 	"errors"
 	"reflect"
@@ -15,6 +17,11 @@ import (
 	"github.com/flash1nho/GophKeeper/internal/security"
 )
 
+const (
+	FileStoragePath = "./uploads"
+	ChunkSize       = 1024 * 1024 // 1MB
+)
+
 var (
 	ErrInvalidUserID  = errors.New("id пользователя не может быть пустым")
 	ErrUserNotFound   = errors.New("пользователь не существует")
@@ -22,14 +29,17 @@ var (
 	ErrUnknownType    = errors.New("тип не найден")
 	ErrEmptyRows      = errors.New("секреты не найдены")
 	ErrIDEmpty        = errors.New("'id' не может быть пустым")
+	ErrNotImplemented = errors.New("недопустимый метод")
 )
 
 type BaseSecret struct {
 	ID            int                     `json:"-"`
 	UserID        int                     `json:"-"`
+	FileName      string                  `json:"-"`
 	CreatedAt     time.Time               `json:"-"`
 	UpdatedAt     time.Time               `json:"-"`
 	CryptoManager *security.CryptoManager `json:"-"`
+	pool          *pgxpool.Pool           `json:"-"`
 }
 
 type SecretResponse struct {
@@ -44,16 +54,17 @@ type Secret interface {
 	GetBaseSecret() *BaseSecret
 	GetType() string
 	GetSecret() any
-	CreateValidate() error
+	CreateValidate(ctx context.Context) error
 	UpdateValidate() error
+	FileExists(ctx context.Context) (bool, error)
 }
 
-func (b *BaseSecret) GetBaseSecret() *BaseSecret {
-	return b
+func (baseSecret *BaseSecret) GetBaseSecret() *BaseSecret {
+	return baseSecret
 }
 
-func Create(ctx context.Context, pool *pgxpool.Pool, s Secret) ([]any, error) {
-	err := s.CreateValidate()
+func Create(ctx context.Context, s Secret) ([]any, error) {
+	err := s.CreateValidate(ctx)
 
 	if err != nil {
 		return nil, err
@@ -71,8 +82,8 @@ func Create(ctx context.Context, pool *pgxpool.Pool, s Secret) ([]any, error) {
 		return nil, err
 	}
 
-	userKey, err := baseSecret.getUserKey(ctx, pool)
-	encryptedData, err := baseSecret.encryptData(payload, userKey)
+	userKey, err := baseSecret.GetUserKey(ctx)
+	encryptedData, err := baseSecret.EncryptData(payload, userKey)
 
 	if err != nil {
 		return nil, err
@@ -81,8 +92,8 @@ func Create(ctx context.Context, pool *pgxpool.Pool, s Secret) ([]any, error) {
 	dateAt := time.Now().UTC()
 
 	query, args, err := squirrel.Insert("secrets").
-		Columns("user_id", "encrypted_data", "type", "created_at", "updated_at").
-		Values(baseSecret.UserID, encryptedData, s.GetType(), dateAt, dateAt).
+		Columns("user_id", "file_name", "encrypted_data", "type", "created_at", "updated_at").
+		Values(baseSecret.UserID, baseSecret.FileName, encryptedData, s.GetType(), dateAt, dateAt).
 		Suffix("RETURNING id").
 		PlaceholderFormat(squirrel.Dollar).
 		ToSql()
@@ -91,7 +102,7 @@ func Create(ctx context.Context, pool *pgxpool.Pool, s Secret) ([]any, error) {
 		return nil, err
 	}
 
-	err = pool.QueryRow(ctx, query, args...).Scan(&baseSecret.ID)
+	err = baseSecret.pool.QueryRow(ctx, query, args...).Scan(&baseSecret.ID)
 
 	if err != nil {
 		return nil, err
@@ -104,13 +115,17 @@ func Create(ctx context.Context, pool *pgxpool.Pool, s Secret) ([]any, error) {
 		ToSql()
 
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrEmptyRows
+		}
+
 		return nil, err
 	}
 
-	return baseSecret.data(ctx, pool, s, query, args)
+	return baseSecret.data(ctx, s, query, args)
 }
 
-func Get(ctx context.Context, pool *pgxpool.Pool, s Secret, ID int) ([]any, error) {
+func Get(ctx context.Context, s Secret, ID int) ([]any, error) {
 	if ID == 0 {
 		return nil, ErrIDEmpty
 	}
@@ -126,13 +141,17 @@ func Get(ctx context.Context, pool *pgxpool.Pool, s Secret, ID int) ([]any, erro
 		ToSql()
 
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrEmptyRows
+		}
+
 		return nil, err
 	}
 
-	return baseSecret.data(ctx, pool, s, query, args)
+	return baseSecret.data(ctx, s, query, args)
 }
 
-func List(ctx context.Context, pool *pgxpool.Pool, s Secret) ([]any, error) {
+func List(ctx context.Context, s Secret) ([]any, error) {
 	baseSecret := s.GetBaseSecret()
 
 	query, args, err := squirrel.Select("id", "encrypted_data", "created_at", "updated_at").
@@ -144,13 +163,17 @@ func List(ctx context.Context, pool *pgxpool.Pool, s Secret) ([]any, error) {
 		ToSql()
 
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrEmptyRows
+		}
+
 		return nil, err
 	}
 
-	return baseSecret.data(ctx, pool, s, query, args)
+	return baseSecret.data(ctx, s, query, args)
 }
 
-func Update(ctx context.Context, pool *pgxpool.Pool, s Secret, ID int) ([]any, error) {
+func Update(ctx context.Context, s Secret, ID int) ([]any, error) {
 	if ID == 0 {
 		return nil, ErrIDEmpty
 	}
@@ -162,9 +185,9 @@ func Update(ctx context.Context, pool *pgxpool.Pool, s Secret, ID int) ([]any, e
 	}
 
 	baseSecret := s.GetBaseSecret()
-	userKey, err := baseSecret.getUserKey(ctx, pool)
+	userKey, err := baseSecret.GetUserKey(ctx)
 
-	tx, err := pool.Begin(ctx)
+	tx, err := baseSecret.pool.Begin(ctx)
 
 	if err != nil {
 		return nil, err
@@ -195,7 +218,7 @@ func Update(ctx context.Context, pool *pgxpool.Pool, s Secret, ID int) ([]any, e
 		return nil, err
 	}
 
-	oldPayload, err := baseSecret.decryptData(encryptedData, userKey)
+	oldPayload, err := baseSecret.DecryptData(encryptedData, userKey)
 
 	if err != nil {
 		return nil, err
@@ -236,7 +259,7 @@ func Update(ctx context.Context, pool *pgxpool.Pool, s Secret, ID int) ([]any, e
 		return nil, err
 	}
 
-	newEncryptedData, err := baseSecret.encryptData(payload, userKey)
+	newEncryptedData, err := baseSecret.EncryptData(payload, userKey)
 
 	if err != nil {
 		return nil, err
@@ -276,13 +299,17 @@ func Update(ctx context.Context, pool *pgxpool.Pool, s Secret, ID int) ([]any, e
 		ToSql()
 
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrEmptyRows
+		}
+
 		return nil, err
 	}
 
-	return baseSecret.data(ctx, pool, s, query, args)
+	return baseSecret.data(ctx, s, query, args)
 }
 
-func Delete(ctx context.Context, pool *pgxpool.Pool, s Secret, ID int) error {
+func Delete(ctx context.Context, s Secret, ID int) error {
 	if ID == 0 {
 		return ErrIDEmpty
 	}
@@ -300,23 +327,27 @@ func Delete(ctx context.Context, pool *pgxpool.Pool, s Secret, ID int) error {
 		return err
 	}
 
-	_, err = pool.Exec(ctx, query, args...)
+	deleted, err := baseSecret.pool.Exec(ctx, query, args...)
 
 	if err != nil {
 		return err
 	}
 
+	if deleted.RowsAffected() == 0 {
+		return ErrEmptyRows
+	}
+
 	return nil
 }
 
-func (baseSecret *BaseSecret) data(ctx context.Context, pool *pgxpool.Pool, s Secret, query string, args []interface{}) ([]any, error) {
-	userKey, err := baseSecret.getUserKey(ctx, pool)
+func (baseSecret *BaseSecret) data(ctx context.Context, s Secret, query string, args []interface{}) ([]any, error) {
+	userKey, err := baseSecret.GetUserKey(ctx)
 
 	if err != nil {
 		return nil, err
 	}
 
-	rows, err := pool.Query(ctx, query, args...)
+	rows, err := baseSecret.pool.Query(ctx, query, args...)
 
 	if err != nil {
 		return nil, err
@@ -347,7 +378,7 @@ func (baseSecret *BaseSecret) data(ctx context.Context, pool *pgxpool.Pool, s Se
 			return nil, err
 		}
 
-		decryptedData, err := baseSecret.decryptData(encryptedData, userKey)
+		decryptedData, err := baseSecret.DecryptData(encryptedData, userKey)
 
 		if err != nil {
 			return nil, err
@@ -377,7 +408,7 @@ func (baseSecret *BaseSecret) data(ctx context.Context, pool *pgxpool.Pool, s Se
 	return results, rows.Err()
 }
 
-func (baseSecret *BaseSecret) getUserKey(ctx context.Context, pool *pgxpool.Pool) ([]byte, error) {
+func (baseSecret *BaseSecret) GetUserKey(ctx context.Context) ([]byte, error) {
 	var encryptedSecret []byte
 
 	query, args, err := squirrel.Select("encrypted_secret").
@@ -386,7 +417,7 @@ func (baseSecret *BaseSecret) getUserKey(ctx context.Context, pool *pgxpool.Pool
 		PlaceholderFormat(squirrel.Dollar).
 		ToSql()
 
-	err = pool.QueryRow(ctx, query, args...).Scan(&encryptedSecret)
+	err = baseSecret.pool.QueryRow(ctx, query, args...).Scan(&encryptedSecret)
 
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -399,7 +430,7 @@ func (baseSecret *BaseSecret) getUserKey(ctx context.Context, pool *pgxpool.Pool
 	return baseSecret.CryptoManager.Decrypt(encryptedSecret, baseSecret.CryptoManager.MasterKey)
 }
 
-func (baseSecret *BaseSecret) decryptData(encryptedData []byte, userKey []byte) ([]byte, error) {
+func (baseSecret *BaseSecret) DecryptData(encryptedData []byte, userKey []byte) ([]byte, error) {
 	decryptedUserData, err := baseSecret.CryptoManager.Decrypt(encryptedData, baseSecret.CryptoManager.MasterKey)
 
 	if err != nil {
@@ -409,7 +440,7 @@ func (baseSecret *BaseSecret) decryptData(encryptedData []byte, userKey []byte) 
 	return baseSecret.CryptoManager.Decrypt(decryptedUserData, userKey)
 }
 
-func (baseSecret *BaseSecret) encryptData(data []byte, userKey []byte) ([]byte, error) {
+func (baseSecret *BaseSecret) EncryptData(data []byte, userKey []byte) ([]byte, error) {
 	encryptedUserData, err := baseSecret.CryptoManager.Encrypt(data, userKey)
 
 	if err != nil {
@@ -417,4 +448,42 @@ func (baseSecret *BaseSecret) encryptData(data []byte, userKey []byte) ([]byte, 
 	}
 
 	return baseSecret.CryptoManager.Encrypt(encryptedUserData, baseSecret.CryptoManager.MasterKey)
+}
+
+func (baseSecret *BaseSecret) EncryptStream(data []byte, userKey []byte, offset int64) ([]byte, error) {
+	applyLayer := func(input []byte, key []byte) ([]byte, error) {
+		key = baseSecret.CryptoManager.ConverKeyToSha256(key)
+		block, err := aes.NewCipher(key)
+
+		if err != nil {
+			return nil, err
+		}
+
+		zeroIV := make([]byte, aes.BlockSize)
+		stream := cipher.NewCTR(block, zeroIV)
+
+		if offset > 0 {
+			discard := make([]byte, offset)
+			stream.XORKeyStream(discard, discard)
+		}
+
+		output := make([]byte, len(input))
+		stream.XORKeyStream(output, input)
+
+		return output, nil
+	}
+
+	layer1, err := applyLayer(data, userKey)
+
+	if err != nil {
+		return nil, err
+	}
+
+	final, err := applyLayer(layer1, baseSecret.CryptoManager.MasterKey)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return final, nil
 }

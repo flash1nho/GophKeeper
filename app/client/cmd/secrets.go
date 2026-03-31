@@ -48,6 +48,7 @@ func SecretsCommand(settings config.SettingsObject) *cobra.Command {
 	cmd.AddCommand(secrets.TextCommand(&client, settings))
 	cmd.AddCommand(secrets.CredCommand(&client, settings))
 	cmd.AddCommand(secrets.CardCommand(&client, settings))
+	cmd.AddCommand(secrets.FileCommand(&client, settings))
 
 	return cmd
 }

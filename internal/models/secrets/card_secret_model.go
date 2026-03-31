@@ -1,6 +1,7 @@
 package secrets
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"regexp"
@@ -9,6 +10,7 @@ import (
 	"time"
 
 	"github.com/flash1nho/GophKeeper/internal/security"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 var (
@@ -33,11 +35,12 @@ type Card struct {
 	CVV      string `json:"cvv"`
 }
 
-func NewCard(userID int, masterKey []byte) *Card {
+func NewCard(userID int, masterKey []byte, pool *pgxpool.Pool) *Card {
 	return &Card{
 		BaseSecret: BaseSecret{
 			UserID:        userID,
 			CryptoManager: security.NewCryptoManager(masterKey),
+			pool:          pool,
 		},
 	}
 }
@@ -50,7 +53,7 @@ func (s *Card) GetSecret() any {
 	return s
 }
 
-func (s *Card) CreateValidate() error {
+func (s *Card) CreateValidate(ctx context.Context) error {
 	fields := s.validationFields()
 
 	for _, f := range fields {
@@ -92,6 +95,10 @@ func (s *Card) UpdateValidate() error {
 	}
 
 	return nil
+}
+
+func (s *Card) FileExists(ctx context.Context) (bool, error) {
+	return false, ErrNotImplemented
 }
 
 func (s *Card) validationFields() []struct{ name, value string } {

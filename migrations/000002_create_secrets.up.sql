@@ -3,6 +3,7 @@ CREATE TYPE secrets_type AS ENUM ('Card', 'File', 'Text', 'Cred');
 CREATE TABLE secrets (
     id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     user_id INTEGER NOT NULL,
+    file_name VARCHAR(255),
     encrypted_data BYTEA NOT NULL,
     type secrets_type NOT NULL,
     created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL,
@@ -10,3 +11,4 @@ CREATE TABLE secrets (
 );
 
 CREATE INDEX idx_secrets_user_id_and_type ON secrets(user_id, type);
+CREATE INDEX idx_secrets_file_name ON secrets(file_name);

@@ -19,6 +19,10 @@ func SecretsUpdateCommand(client *pb.GophKeeperPrivateServiceClient, settings co
 		Run: func(cmd *cobra.Command, args []string) {
 			id, data, secretType, err := helpers.ArgsParse(cmd)
 
+			if err != nil {
+				settings.Log.Fatal(err.Error())
+			}
+
 			request := &pb.UpdateRequest{
 				ID:   int32(id),
 				Data: data,

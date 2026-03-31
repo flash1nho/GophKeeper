@@ -48,6 +48,7 @@ func runGrpcServer(ctx context.Context, s *Service) {
 
 	loggingInterceptor := logging.UnaryServerInterceptor(interceptors.InterceptorLogger(s.Handler.Settings.Log))
 	authInterceptor := interceptors.InterceptorAuth(s.Handler.Pool, s.Handler.Settings)
+	authStreamInterceptor := interceptors.StreamInterceptorAuth(s.Handler.Pool, s.Handler.Settings)
 
 	grpcServer := grpc.NewServer(
 		grpc.Creds(creds),
@@ -55,6 +56,7 @@ func runGrpcServer(ctx context.Context, s *Service) {
 			loggingInterceptor,
 			authInterceptor,
 		),
+		grpc.StreamInterceptor(authStreamInterceptor),
 	)
 
 	go func() {

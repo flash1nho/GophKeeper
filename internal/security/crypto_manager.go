@@ -43,7 +43,7 @@ func (m *CryptoManager) CheckPassword(password, hash string) bool {
 }
 
 func (m *CryptoManager) Encrypt(data []byte, key []byte) ([]byte, error) {
-	key = m.converKeyToSha256(key)
+	key = m.ConverKeyToSha256(key)
 
 	block, err := aes.NewCipher(key)
 
@@ -67,7 +67,7 @@ func (m *CryptoManager) Encrypt(data []byte, key []byte) ([]byte, error) {
 }
 
 func (m *CryptoManager) Decrypt(data []byte, key []byte) ([]byte, error) {
-	key = m.converKeyToSha256(key)
+	key = m.ConverKeyToSha256(key)
 
 	block, err := aes.NewCipher(key)
 
@@ -93,7 +93,7 @@ func (m *CryptoManager) Decrypt(data []byte, key []byte) ([]byte, error) {
 }
 
 func (m *CryptoManager) GenerateToken(userID int, enctryptedSecret []byte) (string, error) {
-	secret, err := m.Decrypt(enctryptedSecret, m.MasterKey)
+	userKey, err := m.Decrypt(enctryptedSecret, m.MasterKey)
 
 	if err != nil {
 		return "", err
@@ -116,11 +116,11 @@ func (m *CryptoManager) GenerateToken(userID int, enctryptedSecret []byte) (stri
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
-	return token.SignedString(secret)
+	return token.SignedString(userKey)
 }
 
 func (m *CryptoManager) ValidateToken(tokenStr string, enctryptedSecret []byte) (int, error) {
-	secret, err := m.Decrypt(enctryptedSecret, m.MasterKey)
+	userKey, err := m.Decrypt(enctryptedSecret, m.MasterKey)
 
 	if err != nil {
 		return 0, err
@@ -131,7 +131,7 @@ func (m *CryptoManager) ValidateToken(tokenStr string, enctryptedSecret []byte) 
 			return nil, ErrUnexpectedSigning
 		}
 
-		return secret, nil
+		return userKey, nil
 	})
 
 	if err != nil || !token.Valid {
@@ -176,7 +176,7 @@ func (m *CryptoManager) GetUserIDFromToken(claims jwt.MapClaims) (int, error) {
 	return userID, nil
 }
 
-func (m *CryptoManager) converKeyToSha256(key []byte) []byte {
+func (m *CryptoManager) ConverKeyToSha256(key []byte) []byte {
 	if len(key) != 32 {
 		h := sha256.Sum256(key)
 		key = h[:]

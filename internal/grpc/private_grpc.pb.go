@@ -20,11 +20,13 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	GophKeeperPrivateService_Create_FullMethodName = "/grpc.GophKeeperPrivateService/Create"
-	GophKeeperPrivateService_Get_FullMethodName    = "/grpc.GophKeeperPrivateService/Get"
-	GophKeeperPrivateService_List_FullMethodName   = "/grpc.GophKeeperPrivateService/List"
-	GophKeeperPrivateService_Update_FullMethodName = "/grpc.GophKeeperPrivateService/Update"
-	GophKeeperPrivateService_Delete_FullMethodName = "/grpc.GophKeeperPrivateService/Delete"
+	GophKeeperPrivateService_Create_FullMethodName   = "/grpc.GophKeeperPrivateService/Create"
+	GophKeeperPrivateService_Get_FullMethodName      = "/grpc.GophKeeperPrivateService/Get"
+	GophKeeperPrivateService_List_FullMethodName     = "/grpc.GophKeeperPrivateService/List"
+	GophKeeperPrivateService_Update_FullMethodName   = "/grpc.GophKeeperPrivateService/Update"
+	GophKeeperPrivateService_Delete_FullMethodName   = "/grpc.GophKeeperPrivateService/Delete"
+	GophKeeperPrivateService_Upload_FullMethodName   = "/grpc.GophKeeperPrivateService/Upload"
+	GophKeeperPrivateService_Download_FullMethodName = "/grpc.GophKeeperPrivateService/Download"
 )
 
 // GophKeeperPrivateServiceClient is the client API for GophKeeperPrivateService service.
@@ -36,6 +38,8 @@ type GophKeeperPrivateServiceClient interface {
 	List(ctx context.Context, in *ListRequest, opts ...grpc.CallOption) (*ListResponse, error)
 	Update(ctx context.Context, in *UpdateRequest, opts ...grpc.CallOption) (*UpdateResponse, error)
 	Delete(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*DeleteResponse, error)
+	Upload(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[UploadRequest, UploadResponse], error)
+	Download(ctx context.Context, in *DownloadRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[DownloadResponse], error)
 }
 
 type gophKeeperPrivateServiceClient struct {
@@ -96,6 +100,38 @@ func (c *gophKeeperPrivateServiceClient) Delete(ctx context.Context, in *DeleteR
 	return out, nil
 }
 
+func (c *gophKeeperPrivateServiceClient) Upload(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[UploadRequest, UploadResponse], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &GophKeeperPrivateService_ServiceDesc.Streams[0], GophKeeperPrivateService_Upload_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[UploadRequest, UploadResponse]{ClientStream: stream}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type GophKeeperPrivateService_UploadClient = grpc.ClientStreamingClient[UploadRequest, UploadResponse]
+
+func (c *gophKeeperPrivateServiceClient) Download(ctx context.Context, in *DownloadRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[DownloadResponse], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &GophKeeperPrivateService_ServiceDesc.Streams[1], GophKeeperPrivateService_Download_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[DownloadRequest, DownloadResponse]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type GophKeeperPrivateService_DownloadClient = grpc.ServerStreamingClient[DownloadResponse]
+
 // GophKeeperPrivateServiceServer is the server API for GophKeeperPrivateService service.
 // All implementations must embed UnimplementedGophKeeperPrivateServiceServer
 // for forward compatibility.
@@ -105,6 +141,8 @@ type GophKeeperPrivateServiceServer interface {
 	List(context.Context, *ListRequest) (*ListResponse, error)
 	Update(context.Context, *UpdateRequest) (*UpdateResponse, error)
 	Delete(context.Context, *DeleteRequest) (*DeleteResponse, error)
+	Upload(grpc.ClientStreamingServer[UploadRequest, UploadResponse]) error
+	Download(*DownloadRequest, grpc.ServerStreamingServer[DownloadResponse]) error
 	mustEmbedUnimplementedGophKeeperPrivateServiceServer()
 }
 
@@ -129,6 +167,12 @@ func (UnimplementedGophKeeperPrivateServiceServer) Update(context.Context, *Upda
 }
 func (UnimplementedGophKeeperPrivateServiceServer) Delete(context.Context, *DeleteRequest) (*DeleteResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Delete not implemented")
+}
+func (UnimplementedGophKeeperPrivateServiceServer) Upload(grpc.ClientStreamingServer[UploadRequest, UploadResponse]) error {
+	return status.Error(codes.Unimplemented, "method Upload not implemented")
+}
+func (UnimplementedGophKeeperPrivateServiceServer) Download(*DownloadRequest, grpc.ServerStreamingServer[DownloadResponse]) error {
+	return status.Error(codes.Unimplemented, "method Download not implemented")
 }
 func (UnimplementedGophKeeperPrivateServiceServer) mustEmbedUnimplementedGophKeeperPrivateServiceServer() {
 }
@@ -242,6 +286,24 @@ func _GophKeeperPrivateService_Delete_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _GophKeeperPrivateService_Upload_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(GophKeeperPrivateServiceServer).Upload(&grpc.GenericServerStream[UploadRequest, UploadResponse]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type GophKeeperPrivateService_UploadServer = grpc.ClientStreamingServer[UploadRequest, UploadResponse]
+
+func _GophKeeperPrivateService_Download_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(DownloadRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(GophKeeperPrivateServiceServer).Download(m, &grpc.GenericServerStream[DownloadRequest, DownloadResponse]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type GophKeeperPrivateService_DownloadServer = grpc.ServerStreamingServer[DownloadResponse]
+
 // GophKeeperPrivateService_ServiceDesc is the grpc.ServiceDesc for GophKeeperPrivateService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -270,6 +332,17 @@ var GophKeeperPrivateService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _GophKeeperPrivateService_Delete_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "Upload",
+			Handler:       _GophKeeperPrivateService_Upload_Handler,
+			ClientStreams: true,
+		},
+		{
+			StreamName:    "Download",
+			Handler:       _GophKeeperPrivateService_Download_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "internal/grpc/private.proto",
 }

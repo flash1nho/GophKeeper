@@ -1,11 +1,13 @@
 package secrets
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/flash1nho/GophKeeper/internal/security"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 var ErrInvalidTextData = errors.New("недопустимые текстовые данные")
@@ -16,11 +18,12 @@ type Text struct {
 	Content string `json:"content"`
 }
 
-func NewText(userID int, masterKey []byte) *Text {
+func NewText(userID int, masterKey []byte, pool *pgxpool.Pool) *Text {
 	return &Text{
 		BaseSecret: BaseSecret{
 			UserID:        userID,
 			CryptoManager: security.NewCryptoManager(masterKey),
+			pool:          pool,
 		},
 	}
 }
@@ -33,7 +36,7 @@ func (s *Text) GetSecret() any {
 	return s
 }
 
-func (s *Text) CreateValidate() error {
+func (s *Text) CreateValidate(ctx context.Context) error {
 	if strings.TrimSpace(s.Content) == "" {
 		return fmt.Errorf("%w: поле 'content' не может быть пустым", ErrInvalidTextData)
 	}
@@ -47,4 +50,8 @@ func (s *Text) UpdateValidate() error {
 	}
 
 	return nil
+}
+
+func (s *Text) FileExists(ctx context.Context) (bool, error) {
+	return false, ErrNotImplemented
 }

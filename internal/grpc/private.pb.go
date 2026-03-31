@@ -495,6 +495,296 @@ func (*DeleteResponse) Descriptor() ([]byte, []int) {
 	return file_internal_grpc_private_proto_rawDescGZIP(), []int{9}
 }
 
+type UploadRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Types that are valid to be assigned to Data:
+	//
+	//	*UploadRequest_Metadata
+	//	*UploadRequest_Chunk
+	Data          isUploadRequest_Data `protobuf_oneof:"data"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UploadRequest) Reset() {
+	*x = UploadRequest{}
+	mi := &file_internal_grpc_private_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UploadRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UploadRequest) ProtoMessage() {}
+
+func (x *UploadRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_internal_grpc_private_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UploadRequest.ProtoReflect.Descriptor instead.
+func (*UploadRequest) Descriptor() ([]byte, []int) {
+	return file_internal_grpc_private_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *UploadRequest) GetData() isUploadRequest_Data {
+	if x != nil {
+		return x.Data
+	}
+	return nil
+}
+
+func (x *UploadRequest) GetMetadata() *Metadata {
+	if x != nil {
+		if x, ok := x.Data.(*UploadRequest_Metadata); ok {
+			return x.Metadata
+		}
+	}
+	return nil
+}
+
+func (x *UploadRequest) GetChunk() []byte {
+	if x != nil {
+		if x, ok := x.Data.(*UploadRequest_Chunk); ok {
+			return x.Chunk
+		}
+	}
+	return nil
+}
+
+type isUploadRequest_Data interface {
+	isUploadRequest_Data()
+}
+
+type UploadRequest_Metadata struct {
+	Metadata *Metadata `protobuf:"bytes,1,opt,name=metadata,proto3,oneof"`
+}
+
+type UploadRequest_Chunk struct {
+	Chunk []byte `protobuf:"bytes,2,opt,name=chunk,proto3,oneof"`
+}
+
+func (*UploadRequest_Metadata) isUploadRequest_Data() {}
+
+func (*UploadRequest_Chunk) isUploadRequest_Data() {}
+
+type Metadata struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	FileName        string                 `protobuf:"bytes,1,opt,name=file_name,json=fileName,proto3" json:"file_name,omitempty"`
+	FileContentType string                 `protobuf:"bytes,2,opt,name=file_content_type,json=fileContentType,proto3" json:"file_content_type,omitempty"`
+	FileSize        int64                  `protobuf:"varint,3,opt,name=file_size,json=fileSize,proto3" json:"file_size,omitempty"`
+	FileOffset      int64                  `protobuf:"varint,4,opt,name=file_offset,json=fileOffset,proto3" json:"file_offset,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *Metadata) Reset() {
+	*x = Metadata{}
+	mi := &file_internal_grpc_private_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Metadata) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Metadata) ProtoMessage() {}
+
+func (x *Metadata) ProtoReflect() protoreflect.Message {
+	mi := &file_internal_grpc_private_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Metadata.ProtoReflect.Descriptor instead.
+func (*Metadata) Descriptor() ([]byte, []int) {
+	return file_internal_grpc_private_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *Metadata) GetFileName() string {
+	if x != nil {
+		return x.FileName
+	}
+	return ""
+}
+
+func (x *Metadata) GetFileContentType() string {
+	if x != nil {
+		return x.FileContentType
+	}
+	return ""
+}
+
+func (x *Metadata) GetFileSize() int64 {
+	if x != nil {
+		return x.FileSize
+	}
+	return 0
+}
+
+func (x *Metadata) GetFileOffset() int64 {
+	if x != nil {
+		return x.FileOffset
+	}
+	return 0
+}
+
+type UploadResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Secrets       *_struct.ListValue     `protobuf:"bytes,1,opt,name=secrets,proto3" json:"secrets,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UploadResponse) Reset() {
+	*x = UploadResponse{}
+	mi := &file_internal_grpc_private_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UploadResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UploadResponse) ProtoMessage() {}
+
+func (x *UploadResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_internal_grpc_private_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UploadResponse.ProtoReflect.Descriptor instead.
+func (*UploadResponse) Descriptor() ([]byte, []int) {
+	return file_internal_grpc_private_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *UploadResponse) GetSecrets() *_struct.ListValue {
+	if x != nil {
+		return x.Secrets
+	}
+	return nil
+}
+
+type DownloadRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ID            int32                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	FileOffset    int64                  `protobuf:"varint,2,opt,name=file_offset,json=fileOffset,proto3" json:"file_offset,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DownloadRequest) Reset() {
+	*x = DownloadRequest{}
+	mi := &file_internal_grpc_private_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DownloadRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DownloadRequest) ProtoMessage() {}
+
+func (x *DownloadRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_internal_grpc_private_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DownloadRequest.ProtoReflect.Descriptor instead.
+func (*DownloadRequest) Descriptor() ([]byte, []int) {
+	return file_internal_grpc_private_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *DownloadRequest) GetID() int32 {
+	if x != nil {
+		return x.ID
+	}
+	return 0
+}
+
+func (x *DownloadRequest) GetFileOffset() int64 {
+	if x != nil {
+		return x.FileOffset
+	}
+	return 0
+}
+
+type DownloadResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Chunk         []byte                 `protobuf:"bytes,1,opt,name=chunk,proto3" json:"chunk,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DownloadResponse) Reset() {
+	*x = DownloadResponse{}
+	mi := &file_internal_grpc_private_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DownloadResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DownloadResponse) ProtoMessage() {}
+
+func (x *DownloadResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_internal_grpc_private_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DownloadResponse.ProtoReflect.Descriptor instead.
+func (*DownloadResponse) Descriptor() ([]byte, []int) {
+	return file_internal_grpc_private_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *DownloadResponse) GetChunk() []byte {
+	if x != nil {
+		return x.Chunk
+	}
+	return nil
+}
+
 var File_internal_grpc_private_proto protoreflect.FileDescriptor
 
 const file_internal_grpc_private_proto_rawDesc = "" +
@@ -524,13 +814,33 @@ const file_internal_grpc_private_proto_rawDesc = "" +
 	"\rDeleteRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x05R\x02id\x12\x12\n" +
 	"\x04type\x18\x02 \x01(\tR\x04type\"\x10\n" +
-	"\x0eDeleteResponse2\x94\x02\n" +
+	"\x0eDeleteResponse\"]\n" +
+	"\rUploadRequest\x12,\n" +
+	"\bmetadata\x18\x01 \x01(\v2\x0e.grpc.MetadataH\x00R\bmetadata\x12\x16\n" +
+	"\x05chunk\x18\x02 \x01(\fH\x00R\x05chunkB\x06\n" +
+	"\x04data\"\x91\x01\n" +
+	"\bMetadata\x12\x1b\n" +
+	"\tfile_name\x18\x01 \x01(\tR\bfileName\x12*\n" +
+	"\x11file_content_type\x18\x02 \x01(\tR\x0ffileContentType\x12\x1b\n" +
+	"\tfile_size\x18\x03 \x01(\x03R\bfileSize\x12\x1f\n" +
+	"\vfile_offset\x18\x04 \x01(\x03R\n" +
+	"fileOffset\"F\n" +
+	"\x0eUploadResponse\x124\n" +
+	"\asecrets\x18\x01 \x01(\v2\x1a.google.protobuf.ListValueR\asecrets\"B\n" +
+	"\x0fDownloadRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x05R\x02id\x12\x1f\n" +
+	"\vfile_offset\x18\x02 \x01(\x03R\n" +
+	"fileOffset\"(\n" +
+	"\x10DownloadResponse\x12\x14\n" +
+	"\x05chunk\x18\x01 \x01(\fR\x05chunk2\x88\x03\n" +
 	"\x18GophKeeperPrivateService\x123\n" +
 	"\x06Create\x12\x13.grpc.CreateRequest\x1a\x14.grpc.CreateResponse\x12*\n" +
 	"\x03Get\x12\x10.grpc.GetRequest\x1a\x11.grpc.GetResponse\x12-\n" +
 	"\x04List\x12\x11.grpc.ListRequest\x1a\x12.grpc.ListResponse\x123\n" +
 	"\x06Update\x12\x13.grpc.UpdateRequest\x1a\x14.grpc.UpdateResponse\x123\n" +
-	"\x06Delete\x12\x13.grpc.DeleteRequest\x1a\x14.grpc.DeleteResponseB\vZ\tgrpc/grpcb\x06proto3"
+	"\x06Delete\x12\x13.grpc.DeleteRequest\x1a\x14.grpc.DeleteResponse\x125\n" +
+	"\x06Upload\x12\x13.grpc.UploadRequest\x1a\x14.grpc.UploadResponse(\x01\x12;\n" +
+	"\bDownload\x12\x15.grpc.DownloadRequest\x1a\x16.grpc.DownloadResponse0\x01B\vZ\tgrpc/grpcb\x06proto3"
 
 var (
 	file_internal_grpc_private_proto_rawDescOnce sync.Once
@@ -544,7 +854,7 @@ func file_internal_grpc_private_proto_rawDescGZIP() []byte {
 	return file_internal_grpc_private_proto_rawDescData
 }
 
-var file_internal_grpc_private_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_internal_grpc_private_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
 var file_internal_grpc_private_proto_goTypes = []any{
 	(*CreateRequest)(nil),     // 0: grpc.CreateRequest
 	(*CreateResponse)(nil),    // 1: grpc.CreateResponse
@@ -556,31 +866,42 @@ var file_internal_grpc_private_proto_goTypes = []any{
 	(*UpdateResponse)(nil),    // 7: grpc.UpdateResponse
 	(*DeleteRequest)(nil),     // 8: grpc.DeleteRequest
 	(*DeleteResponse)(nil),    // 9: grpc.DeleteResponse
-	(*_struct.Struct)(nil),    // 10: google.protobuf.Struct
-	(*_struct.ListValue)(nil), // 11: google.protobuf.ListValue
+	(*UploadRequest)(nil),     // 10: grpc.UploadRequest
+	(*Metadata)(nil),          // 11: grpc.Metadata
+	(*UploadResponse)(nil),    // 12: grpc.UploadResponse
+	(*DownloadRequest)(nil),   // 13: grpc.DownloadRequest
+	(*DownloadResponse)(nil),  // 14: grpc.DownloadResponse
+	(*_struct.Struct)(nil),    // 15: google.protobuf.Struct
+	(*_struct.ListValue)(nil), // 16: google.protobuf.ListValue
 }
 var file_internal_grpc_private_proto_depIDxs = []int32{
-	10, // 0: grpc.CreateRequest.data:type_name -> google.protobuf.Struct
-	11, // 1: grpc.CreateResponse.secrets:type_name -> google.protobuf.ListValue
-	11, // 2: grpc.GetResponse.secrets:type_name -> google.protobuf.ListValue
-	11, // 3: grpc.ListResponse.secrets:type_name -> google.protobuf.ListValue
-	10, // 4: grpc.UpdateRequest.data:type_name -> google.protobuf.Struct
-	11, // 5: grpc.UpdateResponse.secrets:type_name -> google.protobuf.ListValue
-	0,  // 6: grpc.GophKeeperPrivateService.Create:input_type -> grpc.CreateRequest
-	2,  // 7: grpc.GophKeeperPrivateService.Get:input_type -> grpc.GetRequest
-	4,  // 8: grpc.GophKeeperPrivateService.List:input_type -> grpc.ListRequest
-	6,  // 9: grpc.GophKeeperPrivateService.Update:input_type -> grpc.UpdateRequest
-	8,  // 10: grpc.GophKeeperPrivateService.Delete:input_type -> grpc.DeleteRequest
-	1,  // 11: grpc.GophKeeperPrivateService.Create:output_type -> grpc.CreateResponse
-	3,  // 12: grpc.GophKeeperPrivateService.Get:output_type -> grpc.GetResponse
-	5,  // 13: grpc.GophKeeperPrivateService.List:output_type -> grpc.ListResponse
-	7,  // 14: grpc.GophKeeperPrivateService.Update:output_type -> grpc.UpdateResponse
-	9,  // 15: grpc.GophKeeperPrivateService.Delete:output_type -> grpc.DeleteResponse
-	11, // [11:16] is the sub-list for method output_type
-	6,  // [6:11] is the sub-list for method input_type
-	6,  // [6:6] is the sub-list for extension type_name
-	6,  // [6:6] is the sub-list for extension extendee
-	0,  // [0:6] is the sub-list for field type_name
+	15, // 0: grpc.CreateRequest.data:type_name -> google.protobuf.Struct
+	16, // 1: grpc.CreateResponse.secrets:type_name -> google.protobuf.ListValue
+	16, // 2: grpc.GetResponse.secrets:type_name -> google.protobuf.ListValue
+	16, // 3: grpc.ListResponse.secrets:type_name -> google.protobuf.ListValue
+	15, // 4: grpc.UpdateRequest.data:type_name -> google.protobuf.Struct
+	16, // 5: grpc.UpdateResponse.secrets:type_name -> google.protobuf.ListValue
+	11, // 6: grpc.UploadRequest.metadata:type_name -> grpc.Metadata
+	16, // 7: grpc.UploadResponse.secrets:type_name -> google.protobuf.ListValue
+	0,  // 8: grpc.GophKeeperPrivateService.Create:input_type -> grpc.CreateRequest
+	2,  // 9: grpc.GophKeeperPrivateService.Get:input_type -> grpc.GetRequest
+	4,  // 10: grpc.GophKeeperPrivateService.List:input_type -> grpc.ListRequest
+	6,  // 11: grpc.GophKeeperPrivateService.Update:input_type -> grpc.UpdateRequest
+	8,  // 12: grpc.GophKeeperPrivateService.Delete:input_type -> grpc.DeleteRequest
+	10, // 13: grpc.GophKeeperPrivateService.Upload:input_type -> grpc.UploadRequest
+	13, // 14: grpc.GophKeeperPrivateService.Download:input_type -> grpc.DownloadRequest
+	1,  // 15: grpc.GophKeeperPrivateService.Create:output_type -> grpc.CreateResponse
+	3,  // 16: grpc.GophKeeperPrivateService.Get:output_type -> grpc.GetResponse
+	5,  // 17: grpc.GophKeeperPrivateService.List:output_type -> grpc.ListResponse
+	7,  // 18: grpc.GophKeeperPrivateService.Update:output_type -> grpc.UpdateResponse
+	9,  // 19: grpc.GophKeeperPrivateService.Delete:output_type -> grpc.DeleteResponse
+	12, // 20: grpc.GophKeeperPrivateService.Upload:output_type -> grpc.UploadResponse
+	14, // 21: grpc.GophKeeperPrivateService.Download:output_type -> grpc.DownloadResponse
+	15, // [15:22] is the sub-list for method output_type
+	8,  // [8:15] is the sub-list for method input_type
+	8,  // [8:8] is the sub-list for extension type_name
+	8,  // [8:8] is the sub-list for extension extendee
+	0,  // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_internal_grpc_private_proto_init() }
@@ -588,13 +909,17 @@ func file_internal_grpc_private_proto_init() {
 	if File_internal_grpc_private_proto != nil {
 		return
 	}
+	file_internal_grpc_private_proto_msgTypes[10].OneofWrappers = []any{
+		(*UploadRequest_Metadata)(nil),
+		(*UploadRequest_Chunk)(nil),
+	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_internal_grpc_private_proto_rawDesc), len(file_internal_grpc_private_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   10,
+			NumMessages:   15,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
