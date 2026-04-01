@@ -57,6 +57,8 @@ type Secret interface {
 	CreateValidate(ctx context.Context) error
 	UpdateValidate() error
 	FileExists(ctx context.Context) (bool, error)
+	GetFileOffset() (int64, error)
+	SetFileOffset(fileOffset int64)
 }
 
 func (baseSecret *BaseSecret) GetBaseSecret() *BaseSecret {
@@ -122,7 +124,7 @@ func Create(ctx context.Context, s Secret) ([]any, error) {
 		return nil, err
 	}
 
-	return baseSecret.data(ctx, s, query, args)
+	return baseSecret.Data(ctx, s, query, args)
 }
 
 func Get(ctx context.Context, s Secret, ID int) ([]any, error) {
@@ -148,7 +150,7 @@ func Get(ctx context.Context, s Secret, ID int) ([]any, error) {
 		return nil, err
 	}
 
-	return baseSecret.data(ctx, s, query, args)
+	return baseSecret.Data(ctx, s, query, args)
 }
 
 func List(ctx context.Context, s Secret) ([]any, error) {
@@ -170,7 +172,7 @@ func List(ctx context.Context, s Secret) ([]any, error) {
 		return nil, err
 	}
 
-	return baseSecret.data(ctx, s, query, args)
+	return baseSecret.Data(ctx, s, query, args)
 }
 
 func Update(ctx context.Context, s Secret, ID int) ([]any, error) {
@@ -195,7 +197,7 @@ func Update(ctx context.Context, s Secret, ID int) ([]any, error) {
 
 	defer tx.Rollback(ctx)
 
-	sqlSelect, args, _ := squirrel.Select("encrypted_data").
+	sqlSelect, args, err := squirrel.Select("encrypted_data").
 		From("secrets").
 		Where(squirrel.Eq{"id": ID}).
 		Where(squirrel.Eq{"user_id": baseSecret.UserID}).
@@ -204,17 +206,19 @@ func Update(ctx context.Context, s Secret, ID int) ([]any, error) {
 		PlaceholderFormat(squirrel.Dollar).
 		ToSql()
 
+	if err != nil {
+		return nil, err
+	}
+
 	var encryptedData []byte
 
-	if err := tx.QueryRow(ctx, sqlSelect, args...).Scan(&encryptedData); err != nil {
+	err = tx.QueryRow(ctx, sqlSelect, args...).Scan(&encryptedData)
+
+	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrEmptyRows
 		}
 
-		return nil, err
-	}
-
-	if err != nil {
 		return nil, err
 	}
 
@@ -306,7 +310,7 @@ func Update(ctx context.Context, s Secret, ID int) ([]any, error) {
 		return nil, err
 	}
 
-	return baseSecret.data(ctx, s, query, args)
+	return baseSecret.Data(ctx, s, query, args)
 }
 
 func Delete(ctx context.Context, s Secret, ID int) error {
@@ -340,7 +344,7 @@ func Delete(ctx context.Context, s Secret, ID int) error {
 	return nil
 }
 
-func (baseSecret *BaseSecret) data(ctx context.Context, s Secret, query string, args []interface{}) ([]any, error) {
+func (baseSecret *BaseSecret) Data(ctx context.Context, s Secret, query string, args []interface{}) ([]any, error) {
 	userKey, err := baseSecret.GetUserKey(ctx)
 
 	if err != nil {
@@ -352,9 +356,8 @@ func (baseSecret *BaseSecret) data(ctx context.Context, s Secret, query string, 
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
-	var results []any
+	defer rows.Close()
 
 	secretObject := s.GetSecret()
 
@@ -368,13 +371,17 @@ func (baseSecret *BaseSecret) data(ctx context.Context, s Secret, query string, 
 		targetType = targetType.Elem()
 	}
 
+	var results []any
+
 	for rows.Next() {
 		var id int
 		var encryptedData []byte
 		var createdAt time.Time
 		var updatedAt time.Time
 
-		if err := rows.Scan(&id, &encryptedData, &createdAt, &updatedAt); err != nil {
+		err = rows.Scan(&id, &encryptedData, &createdAt, &updatedAt)
+
+		if err != nil {
 			return nil, err
 		}
 
@@ -386,7 +393,9 @@ func (baseSecret *BaseSecret) data(ctx context.Context, s Secret, query string, 
 
 		secret := reflect.New(targetType).Interface()
 
-		if err := json.Unmarshal(decryptedData, secret); err != nil {
+		err = json.Unmarshal(decryptedData, secret)
+
+		if err != nil {
 			return nil, err
 		}
 
@@ -401,11 +410,17 @@ func (baseSecret *BaseSecret) data(ctx context.Context, s Secret, query string, 
 		results = append(results, result)
 	}
 
+	err = rows.Err()
+
+	if err != nil {
+		return nil, err
+	}
+
 	if len(results) == 0 {
 		return nil, ErrEmptyRows
 	}
 
-	return results, rows.Err()
+	return results, nil
 }
 
 func (baseSecret *BaseSecret) GetUserKey(ctx context.Context) ([]byte, error) {
@@ -416,6 +431,10 @@ func (baseSecret *BaseSecret) GetUserKey(ctx context.Context) ([]byte, error) {
 		Where(squirrel.Eq{"id": baseSecret.UserID}).
 		PlaceholderFormat(squirrel.Dollar).
 		ToSql()
+
+	if err != nil {
+		return nil, err
+	}
 
 	err = baseSecret.pool.QueryRow(ctx, query, args...).Scan(&encryptedSecret)
 

@@ -28,6 +28,14 @@ func PrintResult(values []*structpb.Value) {
 			fmt.Printf("id: %.0f\n", id.GetNumberValue())
 		}
 
+		if fileName, ok := fields["file_name"]; ok {
+			val := fileName.GetStringValue()
+
+			if val != "" {
+				fmt.Printf("file_name: %d\n", val)
+			}
+		}
+
 		if data, ok := fields["data"]; ok && data.GetStructValue() != nil {
 			dataFields := data.GetStructValue().GetFields()
 			keys := make([]string, 0, len(dataFields))

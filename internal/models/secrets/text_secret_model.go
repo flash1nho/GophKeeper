@@ -55,3 +55,10 @@ func (s *Text) UpdateValidate() error {
 func (s *Text) FileExists(ctx context.Context) (bool, error) {
 	return false, ErrNotImplemented
 }
+
+func (s *Text) GetFileOffset() (int64, error) {
+	return 0, ErrNotImplemented
+}
+
+func (s *Text) SetFileOffset(fileOffset int64) {
+}

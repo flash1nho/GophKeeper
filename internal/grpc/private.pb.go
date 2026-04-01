@@ -689,6 +689,94 @@ func (x *UploadResponse) GetSecrets() *_struct.ListValue {
 	return nil
 }
 
+type UploadStatusRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	FileName      string                 `protobuf:"bytes,1,opt,name=file_name,json=fileName,proto3" json:"file_name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UploadStatusRequest) Reset() {
+	*x = UploadStatusRequest{}
+	mi := &file_internal_grpc_private_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UploadStatusRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UploadStatusRequest) ProtoMessage() {}
+
+func (x *UploadStatusRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_internal_grpc_private_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UploadStatusRequest.ProtoReflect.Descriptor instead.
+func (*UploadStatusRequest) Descriptor() ([]byte, []int) {
+	return file_internal_grpc_private_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *UploadStatusRequest) GetFileName() string {
+	if x != nil {
+		return x.FileName
+	}
+	return ""
+}
+
+type UploadStatusResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	FileOffset    int64                  `protobuf:"varint,1,opt,name=file_offset,json=fileOffset,proto3" json:"file_offset,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UploadStatusResponse) Reset() {
+	*x = UploadStatusResponse{}
+	mi := &file_internal_grpc_private_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UploadStatusResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UploadStatusResponse) ProtoMessage() {}
+
+func (x *UploadStatusResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_internal_grpc_private_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UploadStatusResponse.ProtoReflect.Descriptor instead.
+func (*UploadStatusResponse) Descriptor() ([]byte, []int) {
+	return file_internal_grpc_private_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *UploadStatusResponse) GetFileOffset() int64 {
+	if x != nil {
+		return x.FileOffset
+	}
+	return 0
+}
+
 type DownloadRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ID            int32                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -699,7 +787,7 @@ type DownloadRequest struct {
 
 func (x *DownloadRequest) Reset() {
 	*x = DownloadRequest{}
-	mi := &file_internal_grpc_private_proto_msgTypes[13]
+	mi := &file_internal_grpc_private_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -711,7 +799,7 @@ func (x *DownloadRequest) String() string {
 func (*DownloadRequest) ProtoMessage() {}
 
 func (x *DownloadRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_grpc_private_proto_msgTypes[13]
+	mi := &file_internal_grpc_private_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -724,7 +812,7 @@ func (x *DownloadRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DownloadRequest.ProtoReflect.Descriptor instead.
 func (*DownloadRequest) Descriptor() ([]byte, []int) {
-	return file_internal_grpc_private_proto_rawDescGZIP(), []int{13}
+	return file_internal_grpc_private_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *DownloadRequest) GetID() int32 {
@@ -750,7 +838,7 @@ type DownloadResponse struct {
 
 func (x *DownloadResponse) Reset() {
 	*x = DownloadResponse{}
-	mi := &file_internal_grpc_private_proto_msgTypes[14]
+	mi := &file_internal_grpc_private_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -762,7 +850,7 @@ func (x *DownloadResponse) String() string {
 func (*DownloadResponse) ProtoMessage() {}
 
 func (x *DownloadResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_internal_grpc_private_proto_msgTypes[14]
+	mi := &file_internal_grpc_private_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -775,7 +863,7 @@ func (x *DownloadResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DownloadResponse.ProtoReflect.Descriptor instead.
 func (*DownloadResponse) Descriptor() ([]byte, []int) {
-	return file_internal_grpc_private_proto_rawDescGZIP(), []int{14}
+	return file_internal_grpc_private_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *DownloadResponse) GetChunk() []byte {
@@ -826,19 +914,25 @@ const file_internal_grpc_private_proto_rawDesc = "" +
 	"\vfile_offset\x18\x04 \x01(\x03R\n" +
 	"fileOffset\"F\n" +
 	"\x0eUploadResponse\x124\n" +
-	"\asecrets\x18\x01 \x01(\v2\x1a.google.protobuf.ListValueR\asecrets\"B\n" +
+	"\asecrets\x18\x01 \x01(\v2\x1a.google.protobuf.ListValueR\asecrets\"2\n" +
+	"\x13UploadStatusRequest\x12\x1b\n" +
+	"\tfile_name\x18\x01 \x01(\tR\bfileName\"7\n" +
+	"\x14UploadStatusResponse\x12\x1f\n" +
+	"\vfile_offset\x18\x01 \x01(\x03R\n" +
+	"fileOffset\"B\n" +
 	"\x0fDownloadRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x05R\x02id\x12\x1f\n" +
 	"\vfile_offset\x18\x02 \x01(\x03R\n" +
 	"fileOffset\"(\n" +
 	"\x10DownloadResponse\x12\x14\n" +
-	"\x05chunk\x18\x01 \x01(\fR\x05chunk2\x88\x03\n" +
+	"\x05chunk\x18\x01 \x01(\fR\x05chunk2\xd2\x03\n" +
 	"\x18GophKeeperPrivateService\x123\n" +
 	"\x06Create\x12\x13.grpc.CreateRequest\x1a\x14.grpc.CreateResponse\x12*\n" +
 	"\x03Get\x12\x10.grpc.GetRequest\x1a\x11.grpc.GetResponse\x12-\n" +
 	"\x04List\x12\x11.grpc.ListRequest\x1a\x12.grpc.ListResponse\x123\n" +
 	"\x06Update\x12\x13.grpc.UpdateRequest\x1a\x14.grpc.UpdateResponse\x123\n" +
-	"\x06Delete\x12\x13.grpc.DeleteRequest\x1a\x14.grpc.DeleteResponse\x125\n" +
+	"\x06Delete\x12\x13.grpc.DeleteRequest\x1a\x14.grpc.DeleteResponse\x12H\n" +
+	"\x0fGetUploadStatus\x12\x19.grpc.UploadStatusRequest\x1a\x1a.grpc.UploadStatusResponse\x125\n" +
 	"\x06Upload\x12\x13.grpc.UploadRequest\x1a\x14.grpc.UploadResponse(\x01\x12;\n" +
 	"\bDownload\x12\x15.grpc.DownloadRequest\x1a\x16.grpc.DownloadResponse0\x01B\vZ\tgrpc/grpcb\x06proto3"
 
@@ -854,51 +948,55 @@ func file_internal_grpc_private_proto_rawDescGZIP() []byte {
 	return file_internal_grpc_private_proto_rawDescData
 }
 
-var file_internal_grpc_private_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
+var file_internal_grpc_private_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
 var file_internal_grpc_private_proto_goTypes = []any{
-	(*CreateRequest)(nil),     // 0: grpc.CreateRequest
-	(*CreateResponse)(nil),    // 1: grpc.CreateResponse
-	(*GetRequest)(nil),        // 2: grpc.GetRequest
-	(*GetResponse)(nil),       // 3: grpc.GetResponse
-	(*ListRequest)(nil),       // 4: grpc.ListRequest
-	(*ListResponse)(nil),      // 5: grpc.ListResponse
-	(*UpdateRequest)(nil),     // 6: grpc.UpdateRequest
-	(*UpdateResponse)(nil),    // 7: grpc.UpdateResponse
-	(*DeleteRequest)(nil),     // 8: grpc.DeleteRequest
-	(*DeleteResponse)(nil),    // 9: grpc.DeleteResponse
-	(*UploadRequest)(nil),     // 10: grpc.UploadRequest
-	(*Metadata)(nil),          // 11: grpc.Metadata
-	(*UploadResponse)(nil),    // 12: grpc.UploadResponse
-	(*DownloadRequest)(nil),   // 13: grpc.DownloadRequest
-	(*DownloadResponse)(nil),  // 14: grpc.DownloadResponse
-	(*_struct.Struct)(nil),    // 15: google.protobuf.Struct
-	(*_struct.ListValue)(nil), // 16: google.protobuf.ListValue
+	(*CreateRequest)(nil),        // 0: grpc.CreateRequest
+	(*CreateResponse)(nil),       // 1: grpc.CreateResponse
+	(*GetRequest)(nil),           // 2: grpc.GetRequest
+	(*GetResponse)(nil),          // 3: grpc.GetResponse
+	(*ListRequest)(nil),          // 4: grpc.ListRequest
+	(*ListResponse)(nil),         // 5: grpc.ListResponse
+	(*UpdateRequest)(nil),        // 6: grpc.UpdateRequest
+	(*UpdateResponse)(nil),       // 7: grpc.UpdateResponse
+	(*DeleteRequest)(nil),        // 8: grpc.DeleteRequest
+	(*DeleteResponse)(nil),       // 9: grpc.DeleteResponse
+	(*UploadRequest)(nil),        // 10: grpc.UploadRequest
+	(*Metadata)(nil),             // 11: grpc.Metadata
+	(*UploadResponse)(nil),       // 12: grpc.UploadResponse
+	(*UploadStatusRequest)(nil),  // 13: grpc.UploadStatusRequest
+	(*UploadStatusResponse)(nil), // 14: grpc.UploadStatusResponse
+	(*DownloadRequest)(nil),      // 15: grpc.DownloadRequest
+	(*DownloadResponse)(nil),     // 16: grpc.DownloadResponse
+	(*_struct.Struct)(nil),       // 17: google.protobuf.Struct
+	(*_struct.ListValue)(nil),    // 18: google.protobuf.ListValue
 }
 var file_internal_grpc_private_proto_depIDxs = []int32{
-	15, // 0: grpc.CreateRequest.data:type_name -> google.protobuf.Struct
-	16, // 1: grpc.CreateResponse.secrets:type_name -> google.protobuf.ListValue
-	16, // 2: grpc.GetResponse.secrets:type_name -> google.protobuf.ListValue
-	16, // 3: grpc.ListResponse.secrets:type_name -> google.protobuf.ListValue
-	15, // 4: grpc.UpdateRequest.data:type_name -> google.protobuf.Struct
-	16, // 5: grpc.UpdateResponse.secrets:type_name -> google.protobuf.ListValue
+	17, // 0: grpc.CreateRequest.data:type_name -> google.protobuf.Struct
+	18, // 1: grpc.CreateResponse.secrets:type_name -> google.protobuf.ListValue
+	18, // 2: grpc.GetResponse.secrets:type_name -> google.protobuf.ListValue
+	18, // 3: grpc.ListResponse.secrets:type_name -> google.protobuf.ListValue
+	17, // 4: grpc.UpdateRequest.data:type_name -> google.protobuf.Struct
+	18, // 5: grpc.UpdateResponse.secrets:type_name -> google.protobuf.ListValue
 	11, // 6: grpc.UploadRequest.metadata:type_name -> grpc.Metadata
-	16, // 7: grpc.UploadResponse.secrets:type_name -> google.protobuf.ListValue
+	18, // 7: grpc.UploadResponse.secrets:type_name -> google.protobuf.ListValue
 	0,  // 8: grpc.GophKeeperPrivateService.Create:input_type -> grpc.CreateRequest
 	2,  // 9: grpc.GophKeeperPrivateService.Get:input_type -> grpc.GetRequest
 	4,  // 10: grpc.GophKeeperPrivateService.List:input_type -> grpc.ListRequest
 	6,  // 11: grpc.GophKeeperPrivateService.Update:input_type -> grpc.UpdateRequest
 	8,  // 12: grpc.GophKeeperPrivateService.Delete:input_type -> grpc.DeleteRequest
-	10, // 13: grpc.GophKeeperPrivateService.Upload:input_type -> grpc.UploadRequest
-	13, // 14: grpc.GophKeeperPrivateService.Download:input_type -> grpc.DownloadRequest
-	1,  // 15: grpc.GophKeeperPrivateService.Create:output_type -> grpc.CreateResponse
-	3,  // 16: grpc.GophKeeperPrivateService.Get:output_type -> grpc.GetResponse
-	5,  // 17: grpc.GophKeeperPrivateService.List:output_type -> grpc.ListResponse
-	7,  // 18: grpc.GophKeeperPrivateService.Update:output_type -> grpc.UpdateResponse
-	9,  // 19: grpc.GophKeeperPrivateService.Delete:output_type -> grpc.DeleteResponse
-	12, // 20: grpc.GophKeeperPrivateService.Upload:output_type -> grpc.UploadResponse
-	14, // 21: grpc.GophKeeperPrivateService.Download:output_type -> grpc.DownloadResponse
-	15, // [15:22] is the sub-list for method output_type
-	8,  // [8:15] is the sub-list for method input_type
+	13, // 13: grpc.GophKeeperPrivateService.GetUploadStatus:input_type -> grpc.UploadStatusRequest
+	10, // 14: grpc.GophKeeperPrivateService.Upload:input_type -> grpc.UploadRequest
+	15, // 15: grpc.GophKeeperPrivateService.Download:input_type -> grpc.DownloadRequest
+	1,  // 16: grpc.GophKeeperPrivateService.Create:output_type -> grpc.CreateResponse
+	3,  // 17: grpc.GophKeeperPrivateService.Get:output_type -> grpc.GetResponse
+	5,  // 18: grpc.GophKeeperPrivateService.List:output_type -> grpc.ListResponse
+	7,  // 19: grpc.GophKeeperPrivateService.Update:output_type -> grpc.UpdateResponse
+	9,  // 20: grpc.GophKeeperPrivateService.Delete:output_type -> grpc.DeleteResponse
+	14, // 21: grpc.GophKeeperPrivateService.GetUploadStatus:output_type -> grpc.UploadStatusResponse
+	12, // 22: grpc.GophKeeperPrivateService.Upload:output_type -> grpc.UploadResponse
+	16, // 23: grpc.GophKeeperPrivateService.Download:output_type -> grpc.DownloadResponse
+	16, // [16:24] is the sub-list for method output_type
+	8,  // [8:16] is the sub-list for method input_type
 	8,  // [8:8] is the sub-list for extension type_name
 	8,  // [8:8] is the sub-list for extension extendee
 	0,  // [0:8] is the sub-list for field type_name
@@ -919,7 +1017,7 @@ func file_internal_grpc_private_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_internal_grpc_private_proto_rawDesc), len(file_internal_grpc_private_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   15,
+			NumMessages:   17,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -20,9 +20,10 @@ var (
 type File struct {
 	BaseSecret
 
+	FileName        string `json:"file_name"`
 	FileContentType string `json:"file_content_type"`
-	FileSize        string `json:"file_size"`
-	FileOffset      string `json:"file_offset`
+	FileSize        int64  `json:"file_size"`
+	FileOffset      int64  `json:"file_offset"`
 }
 
 func NewFile(userID int, masterKey []byte, pool *pgxpool.Pool) *File {
@@ -44,9 +45,7 @@ func (s *File) GetSecret() any {
 }
 
 func (s *File) CreateValidate(ctx context.Context) error {
-	fileName := s.GetBaseSecret().FileName
-
-	if strings.TrimSpace(fileName) == "" {
+	if strings.TrimSpace(s.FileName) == "" {
 		return ErrEmptyFileName
 	}
 
@@ -64,13 +63,13 @@ func (s *File) CreateValidate(ctx context.Context) error {
 }
 
 func (s *File) UpdateValidate() error {
-	return ErrNotImplemented
+	return nil
 }
 
 func (s *File) FileExists(ctx context.Context) (bool, error) {
 	baseSecret := s.GetBaseSecret()
 
-	query, args, err := squirrel.Select("id").
+	query, args, err := squirrel.Select("id", "file_offset").
 		From("secrets").
 		Where(squirrel.Eq{"file_name": baseSecret.FileName}).
 		Where(squirrel.Eq{"user_id": baseSecret.UserID}).
@@ -82,19 +81,27 @@ func (s *File) FileExists(ctx context.Context) (bool, error) {
 		return false, err
 	}
 
-	err = baseSecret.pool.QueryRow(ctx, query, args...).Scan(&baseSecret.ID)
+	err = baseSecret.pool.QueryRow(ctx, query, args...).Scan(&baseSecret.ID, &s.FileOffset)
 
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return true, nil
+			return false, nil
 		}
 
 		return false, err
 	}
 
-	if baseSecret.ID > 0 {
-		return true, nil
+	if baseSecret.ID == 0 {
+		return false, nil
 	}
 
-	return false, err
+	return true, nil
+}
+
+func (s *File) GetFileOffset() (int64, error) {
+	return s.FileOffset, nil
+}
+
+func (s *File) SetFileOffset(fileOffset int64) {
+	s.FileOffset = fileOffset
 }

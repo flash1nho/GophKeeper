@@ -108,7 +108,7 @@ func getUserIDFromToken(ctx context.Context, pool *pgxpool.Pool, settings config
 		return 0, status.Error(codes.Unauthenticated, "недопустимый формат токена")
 	}
 
-	userID := 0
+	var userID int
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok {
 		manager := security.NewCryptoManager(settings.MasterKey)

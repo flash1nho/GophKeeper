@@ -6,6 +6,10 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strconv"
+	"time"
+
+	"go.uber.org/zap"
 
 	"github.com/flash1nho/GophKeeper/config"
 	"github.com/flash1nho/GophKeeper/internal/facade"
@@ -46,7 +50,13 @@ func NewGrpcPrivateHandler(pool *pgxpool.Pool, settings config.SettingsObject, f
 }
 
 func (g *GrpcPrivateHandler) Create(ctx context.Context, req *CreateRequest) (*CreateResponse, error) {
-	secret, err := g.prepareSecret(ctx, req.Type, req.Data)
+	secret, err := g.getSecretInstance(ctx, req.Type)
+
+	if err != nil {
+		return nil, err
+	}
+
+	err = g.prepareSecret(ctx, secret, req.Data)
 
 	if err != nil {
 		return nil, err
@@ -112,7 +122,13 @@ func (g *GrpcPrivateHandler) List(ctx context.Context, req *ListRequest) (*ListR
 }
 
 func (g *GrpcPrivateHandler) Update(ctx context.Context, req *UpdateRequest) (*UpdateResponse, error) {
-	secret, err := g.prepareSecret(ctx, req.Type, req.Data)
+	secret, err := g.getSecretInstance(ctx, req.Type)
+
+	if err != nil {
+		return nil, err
+	}
+
+	err = g.prepareSecret(ctx, secret, req.Data)
 
 	if err != nil {
 		return nil, err
@@ -147,8 +163,56 @@ func (g *GrpcPrivateHandler) Delete(ctx context.Context, req *DeleteRequest) (*D
 	return &DeleteResponse{}, nil
 }
 
+func (g *GrpcPrivateHandler) GetUploadStatus(ctx context.Context, req *UploadStatusRequest) (*UploadStatusResponse, error) {
+	secret, err := g.getSecretInstance(ctx, "File")
+
+	if err != nil {
+		return nil, err
+	}
+
+	baseSecret := secret.GetBaseSecret()
+	baseSecret.FileName = req.FileName
+
+	_, err = secret.FileExists(ctx)
+
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "ошибка при получении статуса загрузки: %v", err)
+	}
+
+	var fileOffset int64
+
+	if baseSecret.ID > 0 {
+		res, err := secrets.Get(ctx, secret, baseSecret.ID)
+
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "ошибка при получении секрета: %v", err)
+		}
+
+		protoData, err := g.mapToProto(res)
+
+		if err != nil {
+			return nil, err
+		}
+
+		if len(protoData.Values) > 0 {
+			respStruct := protoData.Values[0].GetStructValue()
+
+			if respStruct != nil {
+				dataField := respStruct.GetFields()["data"].GetStructValue()
+
+				if dataField != nil {
+					fileOffset = int64(dataField.GetFields()["file_offset"].GetNumberValue())
+				}
+			}
+		}
+	}
+
+	return &UploadStatusResponse{FileOffset: fileOffset}, nil
+}
+
 func (g *GrpcPrivateHandler) Upload(stream GophKeeperPrivateService_UploadServer) error {
 	ctx := stream.Context()
+
 	secret, err := g.getSecretInstance(ctx, "File")
 
 	if err != nil {
@@ -165,123 +229,96 @@ func (g *GrpcPrivateHandler) Upload(stream GophKeeperPrivateService_UploadServer
 	var file *os.File
 	var currentOffset int64
 
+	defer func() {
+		if file != nil {
+			file.Close()
+		}
+
+		if ctx.Err() != nil {
+			dbCtx, cancel := context.WithTimeout(context.Background(), time.Second*2)
+			defer cancel()
+
+			if err != nil {
+				g.settings.Log.Error("ошибка при получении оффсета загрузки", zap.Error(err))
+			}
+
+			secret.SetFileOffset(currentOffset)
+			_, err = secrets.Update(dbCtx, secret, baseSecret.ID)
+
+			if err != nil {
+				g.settings.Log.Error("ошибка при обновлении оффсета", zap.Error(err))
+			}
+		}
+	}()
+
 	for {
 		req, err := stream.Recv()
 
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
+		if err == io.EOF {
+			break
+		}
 
+		if err != nil {
 			return err
 		}
 
-		if meta := req.GetMetadata(); meta != nil {
+		if meta := req.GetMetadata(); meta != nil && baseSecret.ID == 0 {
 			baseSecret.FileName = meta.FileName
-			fileExists, err := secret.FileExists(ctx)
 
-			// TODO
+			err = g.ensureSecretExists(ctx, secret, meta)
 
-			if fileExists {
-				bits, err := json.Marshal(meta)
-
-				if err != nil {
-					return err
-				}
-
-				metaStruct := &structpb.Struct{}
-
-				if err := metaStruct.UnmarshalJSON(bits); err != nil {
-					return err
-				}
-
-				secret, err = g.prepareSecret(ctx, "File", metaStruct)
-
-				if err != nil {
-					return err
-				}
-
-				if _, err := secrets.Create(ctx, secret); err != nil {
-					return status.Errorf(codes.Internal, "ошибка создания записи: %v", err)
-				}
+			if err != nil {
+				return err
 			}
 
-			baseSecret.ID = secret.GetBaseSecret().ID
-
-			if baseSecret.ID == 0 {
-				return status.Error(codes.Internal, "ID секрета не определен")
-			}
-
-			filePath := filepath.Join(FileStoragePath, string(baseSecret.ID))
+			filePath := filepath.Join(FileStoragePath, strconv.Itoa(baseSecret.ID))
 			file, err = os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY, 0644)
 
 			if err != nil {
 				return err
 			}
 
-			defer file.Close()
+			info, _ := file.Stat()
+			currentOffset = info.Size()
 
-			info, err := file.Stat()
+			if meta.FileOffset != currentOffset {
+				return status.Errorf(codes.Aborted, "разрыв данных: сервер %d, клиент %d", currentOffset, meta.FileOffset)
+			}
+
+			_, err := file.Seek(currentOffset, 0)
 
 			if err != nil {
 				return err
 			}
 
-			currentOffset = info.Size()
+			continue
+		}
 
-			if meta.FileOffset != currentOffset {
-				return status.Errorf(codes.Aborted, "разрыв данных: на сервере %d, клиент прислал %d", currentOffset, meta.FileOffset)
+		if chunk := req.GetChunk(); chunk != nil {
+			if file == nil {
+				return status.Error(codes.FailedPrecondition, "метаданные не получены")
 			}
 
-			if _, err := file.Seek(currentOffset, 0); err != nil {
+			encryptedChunk, err := baseSecret.EncryptStream(chunk, userKey, currentOffset)
+
+			if err != nil {
 				return err
 			}
 
-			continue
+			n, err := file.Write(encryptedChunk)
+
+			if err != nil {
+				return err
+			}
+
+			currentOffset += int64(n)
 		}
-
-		if file == nil {
-			return status.Error(codes.FailedPrecondition, "метаданные не получены")
-		}
-
-		chunk := req.GetChunk()
-
-		if chunk == nil {
-			continue
-		}
-
-		encryptedChunk, err := baseSecret.EncryptStream(chunk, userKey, currentOffset)
-
-		if err != nil {
-			return err
-		}
-
-		n, err := file.Write(encryptedChunk)
-
-		if err != nil {
-			return err
-		}
-
-		currentOffset += int64(n)
-	}
-
-	data := map[string]interface{}{"FileOffset": currentOffset}
-	structData, err := structpb.NewStruct(data)
-
-	if err != nil {
-		return status.Errorf(codes.Internal, "ошибка конвертации метаданных: %v", err)
-	}
-
-	secret, err = g.prepareSecret(ctx, "File", structData)
-
-	if err != nil {
-		return err
 	}
 
 	res, err := secrets.Get(ctx, secret, baseSecret.ID)
 
 	if err != nil {
-		return status.Errorf(codes.Internal, "ошибка при обновлении секрета: %v", err)
+		return status.Errorf(codes.Internal, "ошибка получения данных: %v", err)
 	}
 
 	protoData, err := g.mapToProto(res)
@@ -344,21 +381,16 @@ func (g *GrpcPrivateHandler) getSecretInstance(ctx context.Context, secretType s
 	return fn(userID, g.settings.MasterKey, g.pool), nil
 }
 
-func (g *GrpcPrivateHandler) prepareSecret(ctx context.Context, secretType string, data *structpb.Struct) (secrets.Secret, error) {
-	secret, err := g.getSecretInstance(ctx, secretType)
-	g.mergeAdditionalData(secretType, data)
-
-	if err != nil {
-		return nil, err
-	}
+func (g *GrpcPrivateHandler) prepareSecret(ctx context.Context, secret secrets.Secret, data *structpb.Struct) error {
+	g.mergeAdditionalData(secret.GetType(), data)
 
 	if data != nil {
 		if err := g.bindData(data, secret.GetSecret()); err != nil {
-			return nil, err
+			return err
 		}
 	}
 
-	return secret, nil
+	return nil
 }
 
 func (g *GrpcPrivateHandler) bindData(src *structpb.Struct, dest any) error {
@@ -413,4 +445,44 @@ func (g *GrpcPrivateHandler) mergeAdditionalData(secretType string, data *struct
 			data.Fields["number"] = structpb.NewStringValue(secrets.FormatCardNumber(cardNumber))
 		}
 	}
+}
+
+func (g *GrpcPrivateHandler) ensureSecretExists(ctx context.Context, secret secrets.Secret, meta *Metadata) error {
+	baseSecret := secret.GetBaseSecret()
+
+	fileExists, err := secret.FileExists(ctx)
+
+	if err != nil {
+		return err
+	}
+
+	if !fileExists {
+		bits, err := json.Marshal(meta)
+
+		if err != nil {
+			return err
+		}
+
+		metaStruct := &structpb.Struct{}
+
+		if err := metaStruct.UnmarshalJSON(bits); err != nil {
+			return err
+		}
+
+		err = g.prepareSecret(ctx, secret, metaStruct)
+
+		if err != nil {
+			return err
+		}
+
+		if _, err := secrets.Create(ctx, secret); err != nil {
+			return status.Errorf(codes.Internal, "ошибка создания записи: %v", err)
+		}
+	}
+
+	if baseSecret.ID == 0 {
+		return status.Error(codes.Internal, "ID секрета не определен после инициализации")
+	}
+
+	return nil
 }

@@ -20,13 +20,14 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	GophKeeperPrivateService_Create_FullMethodName   = "/grpc.GophKeeperPrivateService/Create"
-	GophKeeperPrivateService_Get_FullMethodName      = "/grpc.GophKeeperPrivateService/Get"
-	GophKeeperPrivateService_List_FullMethodName     = "/grpc.GophKeeperPrivateService/List"
-	GophKeeperPrivateService_Update_FullMethodName   = "/grpc.GophKeeperPrivateService/Update"
-	GophKeeperPrivateService_Delete_FullMethodName   = "/grpc.GophKeeperPrivateService/Delete"
-	GophKeeperPrivateService_Upload_FullMethodName   = "/grpc.GophKeeperPrivateService/Upload"
-	GophKeeperPrivateService_Download_FullMethodName = "/grpc.GophKeeperPrivateService/Download"
+	GophKeeperPrivateService_Create_FullMethodName          = "/grpc.GophKeeperPrivateService/Create"
+	GophKeeperPrivateService_Get_FullMethodName             = "/grpc.GophKeeperPrivateService/Get"
+	GophKeeperPrivateService_List_FullMethodName            = "/grpc.GophKeeperPrivateService/List"
+	GophKeeperPrivateService_Update_FullMethodName          = "/grpc.GophKeeperPrivateService/Update"
+	GophKeeperPrivateService_Delete_FullMethodName          = "/grpc.GophKeeperPrivateService/Delete"
+	GophKeeperPrivateService_GetUploadStatus_FullMethodName = "/grpc.GophKeeperPrivateService/GetUploadStatus"
+	GophKeeperPrivateService_Upload_FullMethodName          = "/grpc.GophKeeperPrivateService/Upload"
+	GophKeeperPrivateService_Download_FullMethodName        = "/grpc.GophKeeperPrivateService/Download"
 )
 
 // GophKeeperPrivateServiceClient is the client API for GophKeeperPrivateService service.
@@ -38,6 +39,7 @@ type GophKeeperPrivateServiceClient interface {
 	List(ctx context.Context, in *ListRequest, opts ...grpc.CallOption) (*ListResponse, error)
 	Update(ctx context.Context, in *UpdateRequest, opts ...grpc.CallOption) (*UpdateResponse, error)
 	Delete(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*DeleteResponse, error)
+	GetUploadStatus(ctx context.Context, in *UploadStatusRequest, opts ...grpc.CallOption) (*UploadStatusResponse, error)
 	Upload(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[UploadRequest, UploadResponse], error)
 	Download(ctx context.Context, in *DownloadRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[DownloadResponse], error)
 }
@@ -100,6 +102,16 @@ func (c *gophKeeperPrivateServiceClient) Delete(ctx context.Context, in *DeleteR
 	return out, nil
 }
 
+func (c *gophKeeperPrivateServiceClient) GetUploadStatus(ctx context.Context, in *UploadStatusRequest, opts ...grpc.CallOption) (*UploadStatusResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UploadStatusResponse)
+	err := c.cc.Invoke(ctx, GophKeeperPrivateService_GetUploadStatus_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *gophKeeperPrivateServiceClient) Upload(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[UploadRequest, UploadResponse], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	stream, err := c.cc.NewStream(ctx, &GophKeeperPrivateService_ServiceDesc.Streams[0], GophKeeperPrivateService_Upload_FullMethodName, cOpts...)
@@ -141,6 +153,7 @@ type GophKeeperPrivateServiceServer interface {
 	List(context.Context, *ListRequest) (*ListResponse, error)
 	Update(context.Context, *UpdateRequest) (*UpdateResponse, error)
 	Delete(context.Context, *DeleteRequest) (*DeleteResponse, error)
+	GetUploadStatus(context.Context, *UploadStatusRequest) (*UploadStatusResponse, error)
 	Upload(grpc.ClientStreamingServer[UploadRequest, UploadResponse]) error
 	Download(*DownloadRequest, grpc.ServerStreamingServer[DownloadResponse]) error
 	mustEmbedUnimplementedGophKeeperPrivateServiceServer()
@@ -167,6 +180,9 @@ func (UnimplementedGophKeeperPrivateServiceServer) Update(context.Context, *Upda
 }
 func (UnimplementedGophKeeperPrivateServiceServer) Delete(context.Context, *DeleteRequest) (*DeleteResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Delete not implemented")
+}
+func (UnimplementedGophKeeperPrivateServiceServer) GetUploadStatus(context.Context, *UploadStatusRequest) (*UploadStatusResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetUploadStatus not implemented")
 }
 func (UnimplementedGophKeeperPrivateServiceServer) Upload(grpc.ClientStreamingServer[UploadRequest, UploadResponse]) error {
 	return status.Error(codes.Unimplemented, "method Upload not implemented")
@@ -286,6 +302,24 @@ func _GophKeeperPrivateService_Delete_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _GophKeeperPrivateService_GetUploadStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UploadStatusRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GophKeeperPrivateServiceServer).GetUploadStatus(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GophKeeperPrivateService_GetUploadStatus_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GophKeeperPrivateServiceServer).GetUploadStatus(ctx, req.(*UploadStatusRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _GophKeeperPrivateService_Upload_Handler(srv interface{}, stream grpc.ServerStream) error {
 	return srv.(GophKeeperPrivateServiceServer).Upload(&grpc.GenericServerStream[UploadRequest, UploadResponse]{ServerStream: stream})
 }
@@ -330,6 +364,10 @@ var GophKeeperPrivateService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Delete",
 			Handler:    _GophKeeperPrivateService_Delete_Handler,
+		},
+		{
+			MethodName: "GetUploadStatus",
+			Handler:    _GophKeeperPrivateService_GetUploadStatus_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

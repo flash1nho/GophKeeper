@@ -33,17 +33,39 @@ func SecretsUploadCommand(client *pb.GophKeeperPrivateServiceClient, settings co
 				settings.Log.Fatal(err.Error())
 			}
 
+			statusResp, err := (*client).GetUploadStatus(context.Background(), &pb.UploadStatusRequest{
+				FileName: stat.Name(),
+			})
+
+			if err != nil {
+				settings.Log.Fatal(err.Error())
+			}
+
 			var remoteOffset int64 = 0
+
+			if statusResp != nil {
+				remoteOffset = statusResp.FileOffset
+			}
+
+			if remoteOffset >= stat.Size() {
+				fmt.Println("✅ Файл уже загружен")
+				return
+			}
+
+			_, err = file.Seek(remoteOffset, io.SeekStart)
+
+			if err != nil {
+				settings.Log.Fatal(err.Error())
+			}
 
 			stream, err := (*client).Upload(context.Background())
 
 			if err != nil {
 				helpers.ErrorHandler(settings.Log, err)
-
 				return
 			}
 
-			stream.Send(&pb.UploadRequest{Data: &pb.UploadRequest_Metadata{
+			err = stream.Send(&pb.UploadRequest{Data: &pb.UploadRequest_Metadata{
 				Metadata: &pb.Metadata{
 					FileName:        stat.Name(),
 					FileContentType: mime.TypeByExtension(filepath.Ext(filePath)),
@@ -52,7 +74,9 @@ func SecretsUploadCommand(client *pb.GophKeeperPrivateServiceClient, settings co
 				},
 			}})
 
-			file.Seek(remoteOffset, 0)
+			if err != nil {
+				settings.Log.Fatal(err.Error())
+			}
 
 			buf := make([]byte, 64*1024)
 
@@ -74,7 +98,7 @@ func SecretsUploadCommand(client *pb.GophKeeperPrivateServiceClient, settings co
 				return
 			}
 
-			fmt.Printf("✅ Файл загружен")
+			fmt.Println("✅ Файл загружен")
 			fmt.Println("---")
 
 			if response != nil && response.Secrets != nil && response.Secrets.Values != nil {
