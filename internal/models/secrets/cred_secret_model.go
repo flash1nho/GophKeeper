@@ -66,10 +66,3 @@ func (s *Cred) UpdateValidate() error {
 func (s *Cred) FileExists(ctx context.Context) (bool, error) {
 	return false, ErrNotImplemented
 }
-
-func (s *Cred) GetFileOffset() (int64, error) {
-	return 0, ErrNotImplemented
-}
-
-func (s *Cred) SetFileOffset(fileOffset int64) {
-}

@@ -23,7 +23,6 @@ type File struct {
 	FileName        string `json:"file_name"`
 	FileContentType string `json:"file_content_type"`
 	FileSize        int64  `json:"file_size"`
-	FileOffset      int64  `json:"file_offset"`
 }
 
 func NewFile(userID int, masterKey []byte, pool *pgxpool.Pool) *File {
@@ -69,19 +68,24 @@ func (s *File) UpdateValidate() error {
 func (s *File) FileExists(ctx context.Context) (bool, error) {
 	baseSecret := s.GetBaseSecret()
 
-	query, args, err := squirrel.Select("id", "file_offset").
+	builder := squirrel.Select("id", "file_offset").
 		From("secrets").
-		Where(squirrel.Eq{"file_name": baseSecret.FileName}).
 		Where(squirrel.Eq{"user_id": baseSecret.UserID}).
-		Where(squirrel.Eq{"type": s.GetType()}).
-		PlaceholderFormat(squirrel.Dollar).
-		ToSql()
+		Where(squirrel.Eq{"type": s.GetType()})
+
+	if baseSecret.ID > 0 {
+		builder = builder.Where(squirrel.Eq{"id": baseSecret.ID})
+	} else {
+		builder = builder.Where(squirrel.Eq{"file_name": baseSecret.FileName})
+	}
+
+	query, args, err := builder.PlaceholderFormat(squirrel.Dollar).ToSql()
 
 	if err != nil {
 		return false, err
 	}
 
-	err = baseSecret.pool.QueryRow(ctx, query, args...).Scan(&baseSecret.ID, &s.FileOffset)
+	err = baseSecret.pool.QueryRow(ctx, query, args...).Scan(&baseSecret.ID, &baseSecret.FileOffset)
 
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -96,12 +100,4 @@ func (s *File) FileExists(ctx context.Context) (bool, error) {
 	}
 
 	return true, nil
-}
-
-func (s *File) GetFileOffset() (int64, error) {
-	return s.FileOffset, nil
-}
-
-func (s *File) SetFileOffset(fileOffset int64) {
-	s.FileOffset = fileOffset
 }

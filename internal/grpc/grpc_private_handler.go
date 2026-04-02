@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"io"
 	"os"
-	"path/filepath"
-	"strconv"
 	"time"
 
 	"go.uber.org/zap"
@@ -22,8 +20,7 @@ import (
 )
 
 const (
-	FileStoragePath = "./uploads"
-	ChunkSize       = 1024 * 1024 // 1MB
+	ChunkSize = 1024 * 1024 // 1MB
 )
 
 var typeToSecret = map[string]func(userID int, masterKey []byte, pool *pgxpool.Pool) secrets.Secret{
@@ -171,9 +168,12 @@ func (g *GrpcPrivateHandler) GetUploadStatus(ctx context.Context, req *UploadSta
 	}
 
 	baseSecret := secret.GetBaseSecret()
-	baseSecret.FileName = req.FileName
 
-	_, err = secret.FileExists(ctx)
+	if req.FileName != "" {
+		baseSecret.FileName = req.FileName
+	}
+
+	fileExists, err := secret.FileExists(ctx)
 
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "ошибка при получении статуса загрузки: %v", err)
@@ -181,30 +181,8 @@ func (g *GrpcPrivateHandler) GetUploadStatus(ctx context.Context, req *UploadSta
 
 	var fileOffset int64
 
-	if baseSecret.ID > 0 {
-		res, err := secrets.Get(ctx, secret, baseSecret.ID)
-
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "ошибка при получении секрета: %v", err)
-		}
-
-		protoData, err := g.mapToProto(res)
-
-		if err != nil {
-			return nil, err
-		}
-
-		if len(protoData.Values) > 0 {
-			respStruct := protoData.Values[0].GetStructValue()
-
-			if respStruct != nil {
-				dataField := respStruct.GetFields()["data"].GetStructValue()
-
-				if dataField != nil {
-					fileOffset = int64(dataField.GetFields()["file_offset"].GetNumberValue())
-				}
-			}
-		}
+	if fileExists {
+		fileOffset = baseSecret.FileOffset
 	}
 
 	return &UploadStatusResponse{FileOffset: fileOffset}, nil
@@ -228,21 +206,19 @@ func (g *GrpcPrivateHandler) Upload(stream GophKeeperPrivateService_UploadServer
 
 	var file *os.File
 	var currentOffset int64
+	var dataReceived bool
 
 	defer func() {
 		if file != nil {
+			file.Sync()
 			file.Close()
 		}
 
-		if ctx.Err() != nil {
+		if dataReceived || (ctx.Err() != nil && currentOffset > 0) {
 			dbCtx, cancel := context.WithTimeout(context.Background(), time.Second*2)
 			defer cancel()
 
-			if err != nil {
-				g.settings.Log.Error("ошибка при получении оффсета загрузки", zap.Error(err))
-			}
-
-			secret.SetFileOffset(currentOffset)
+			baseSecret.FileOffset = currentOffset
 			_, err = secrets.Update(dbCtx, secret, baseSecret.ID)
 
 			if err != nil {
@@ -271,15 +247,13 @@ func (g *GrpcPrivateHandler) Upload(stream GophKeeperPrivateService_UploadServer
 				return err
 			}
 
-			filePath := filepath.Join(FileStoragePath, strconv.Itoa(baseSecret.ID))
-			file, err = os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY, 0644)
+			file, err = os.OpenFile(baseSecret.GetFilePath(), os.O_CREATE|os.O_WRONLY, 0644)
 
 			if err != nil {
 				return err
 			}
 
-			info, _ := file.Stat()
-			currentOffset = info.Size()
+			currentOffset = baseSecret.FileOffset
 
 			if meta.FileOffset != currentOffset {
 				return status.Errorf(codes.Aborted, "разрыв данных: сервер %d, клиент %d", currentOffset, meta.FileOffset)
@@ -294,11 +268,12 @@ func (g *GrpcPrivateHandler) Upload(stream GophKeeperPrivateService_UploadServer
 			continue
 		}
 
-		if chunk := req.GetChunk(); chunk != nil {
-			if file == nil {
-				return status.Error(codes.FailedPrecondition, "метаданные не получены")
-			}
+		if file == nil {
+			return status.Error(codes.FailedPrecondition, "метаданные не получены")
+		}
 
+		if chunk := req.GetChunk(); chunk != nil {
+			dataReceived = true
 			encryptedChunk, err := baseSecret.EncryptStream(chunk, userKey, currentOffset)
 
 			if err != nil {
@@ -330,40 +305,90 @@ func (g *GrpcPrivateHandler) Upload(stream GophKeeperPrivateService_UploadServer
 	return stream.SendAndClose(&UploadResponse{Secrets: protoData})
 }
 
-// func (s *server) Download(req *DownloadRequest, stream FileService_DownloadServer) error {
-// 	if err := authInterceptor(stream.Context()); err != nil {
-// 		return err
-// 	}
+func (g *GrpcPrivateHandler) Download(req *DownloadRequest, stream GophKeeperPrivateService_DownloadServer) error {
+	ctx := stream.Context()
 
-// 	// 1. Получить путь из БД по file_id
-// 	filePath := filepath.Join(FileStoragePath, req.FileID)
-// 	file, err := os.Open(filePath)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	defer file.Close()
+	secret, err := g.getSecretInstance(ctx, "File")
 
-// 	// 2. Применить докачку
-// 	_, err = file.Seek(req.Offset, 0)
-// 	if err != nil {
-// 		return err
-// 	}
+	if err != nil {
+		return err
+	}
 
-// 	buffer := make([]byte, ChunkSize)
-// 	for {
-// 		bytesRead, err := file.Read(buffer)
-// 		if err == io.EOF {
-// 			break
-// 		}
-// 		if err != nil {
-// 			return err
-// 		}
-// 		if err := stream.Send(&DownloadResponse{Chunk: buffer[:bytesRead]}); err != nil {
-// 			return err
-// 		}
-// 	}
-// 	return nil
-// }
+	baseSecret := secret.GetBaseSecret()
+	baseSecret.ID = int(req.ID)
+
+	_, err = secrets.Get(ctx, secret, baseSecret.ID)
+
+	if err != nil {
+		return status.Errorf(codes.NotFound, "секрет не найден: %v", err)
+	}
+
+  _, err = secret.FileExists(ctx)
+
+	if err != nil {
+		return err
+	}
+
+	userKey, err := baseSecret.GetUserKey(ctx)
+
+	if err != nil {
+		return err
+	}
+
+	file, err := os.Open(baseSecret.GetFilePath())
+
+	if err != nil {
+		return status.Errorf(codes.Internal, "не удалось открыть файл: %v", err)
+	}
+
+	defer file.Close()
+
+	currentOffset := req.FileOffset
+	_, err = file.Seek(currentOffset, 0)
+
+	if err != nil {
+		return status.Errorf(codes.Internal, "ошибка seek: %v", err)
+	}
+
+	buffer := make([]byte, ChunkSize)
+
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+		}
+
+		n, err := file.Read(buffer)
+
+		if err == io.EOF {
+			break
+		}
+
+		if err != nil {
+			return err
+		}
+
+		decryptedChunk, err := baseSecret.DecryptStream(buffer[:n], userKey, currentOffset)
+
+		if err != nil {
+			return status.Errorf(codes.Internal, "ошибка дешифрования: %v", err)
+		}
+
+		err = stream.Send(&DownloadResponse{
+			Chunk:      decryptedChunk,
+			FileOffset: baseSecret.FileOffset,
+		})
+
+		if err != nil {
+			return err
+		}
+
+		currentOffset += int64(n)
+	}
+
+	return nil
+}
 
 func (g *GrpcPrivateHandler) getSecretInstance(ctx context.Context, secretType string) (secrets.Secret, error) {
 	userID, err := g.facade.GetUserIDFromContext(ctx)

@@ -6,9 +6,9 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	"github.com/flash1nho/GophKeeper/app/client/helpers"
 	"github.com/flash1nho/GophKeeper/config"
 	pb "github.com/flash1nho/GophKeeper/internal/grpc"
-	"google.golang.org/grpc/status"
 )
 
 func UsersLoginCommand(client *pb.GophKeeperPublicServiceClient, settings config.SettingsObject) *cobra.Command {
@@ -27,11 +27,7 @@ func UsersLoginCommand(client *pb.GophKeeperPublicServiceClient, settings config
 			response, err := (*client).Login(cmd.Context(), request)
 
 			if err != nil {
-				if statusErr, ok := status.FromError(err); ok {
-					fmt.Println(statusErr.Message())
-				} else {
-					settings.Log.Error(err.Error())
-				}
+				helpers.ErrorHandler(settings.Log, err)
 
 				return
 			}
@@ -42,7 +38,7 @@ func UsersLoginCommand(client *pb.GophKeeperPublicServiceClient, settings config
 				viper.SafeWriteConfig()
 			}
 
-			fmt.Println("Успешный вход!")
+			fmt.Println("✅ Успешный вход!")
 		},
 	}
 

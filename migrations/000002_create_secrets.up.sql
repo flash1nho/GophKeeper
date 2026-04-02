@@ -4,6 +4,7 @@ CREATE TABLE secrets (
     id INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     user_id INTEGER NOT NULL,
     file_name VARCHAR(255),
+    file_offset BIGINT NOT NULL DEFAULT 0,
     encrypted_data BYTEA NOT NULL,
     type secrets_type NOT NULL,
     created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL,

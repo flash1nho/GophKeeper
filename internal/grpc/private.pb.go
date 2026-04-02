@@ -832,6 +832,7 @@ func (x *DownloadRequest) GetFileOffset() int64 {
 type DownloadResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Chunk         []byte                 `protobuf:"bytes,1,opt,name=chunk,proto3" json:"chunk,omitempty"`
+	FileOffset    int64                  `protobuf:"varint,2,opt,name=file_offset,json=fileOffset,proto3" json:"file_offset,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -871,6 +872,13 @@ func (x *DownloadResponse) GetChunk() []byte {
 		return x.Chunk
 	}
 	return nil
+}
+
+func (x *DownloadResponse) GetFileOffset() int64 {
+	if x != nil {
+		return x.FileOffset
+	}
+	return 0
 }
 
 var File_internal_grpc_private_proto protoreflect.FileDescriptor
@@ -923,9 +931,11 @@ const file_internal_grpc_private_proto_rawDesc = "" +
 	"\x0fDownloadRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x05R\x02id\x12\x1f\n" +
 	"\vfile_offset\x18\x02 \x01(\x03R\n" +
-	"fileOffset\"(\n" +
+	"fileOffset\"I\n" +
 	"\x10DownloadResponse\x12\x14\n" +
-	"\x05chunk\x18\x01 \x01(\fR\x05chunk2\xd2\x03\n" +
+	"\x05chunk\x18\x01 \x01(\fR\x05chunk\x12\x1f\n" +
+	"\vfile_offset\x18\x02 \x01(\x03R\n" +
+	"fileOffset2\xd2\x03\n" +
 	"\x18GophKeeperPrivateService\x123\n" +
 	"\x06Create\x12\x13.grpc.CreateRequest\x1a\x14.grpc.CreateResponse\x12*\n" +
 	"\x03Get\x12\x10.grpc.GetRequest\x1a\x11.grpc.GetResponse\x12-\n" +

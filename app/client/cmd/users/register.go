@@ -6,9 +6,9 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	"github.com/flash1nho/GophKeeper/app/client/helpers"
 	"github.com/flash1nho/GophKeeper/config"
 	pb "github.com/flash1nho/GophKeeper/internal/grpc"
-	"google.golang.org/grpc/status"
 )
 
 func UsersRegisterCommand(client *pb.GophKeeperPublicServiceClient, settings config.SettingsObject) *cobra.Command {
@@ -29,11 +29,7 @@ func UsersRegisterCommand(client *pb.GophKeeperPublicServiceClient, settings con
 			response, err := (*client).Register(cmd.Context(), request)
 
 			if err != nil {
-				if statusErr, ok := status.FromError(err); ok {
-					fmt.Println(statusErr.Message())
-				} else {
-					settings.Log.Error(err.Error())
-				}
+				helpers.ErrorHandler(settings.Log, err)
 
 				return
 			}
@@ -44,7 +40,7 @@ func UsersRegisterCommand(client *pb.GophKeeperPublicServiceClient, settings con
 				viper.SafeWriteConfig()
 			}
 
-			fmt.Println("Успешная регистрация!")
+			fmt.Println("✅ Успешная регистрация!")
 		},
 	}
 

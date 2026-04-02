@@ -8,24 +8,30 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/spf13/cobra"
-
 	"github.com/flash1nho/GophKeeper/app/client/helpers"
 	"github.com/flash1nho/GophKeeper/config"
-
 	pb "github.com/flash1nho/GophKeeper/internal/grpc"
+	"github.com/spf13/cobra"
+)
+
+const (
+	ChunkSize = 1024 * 1024 // 1MB
 )
 
 func SecretsUploadCommand(client *pb.GophKeeperPrivateServiceClient, settings config.SettingsObject) *cobra.Command {
+	var path string
+
 	cmd := &cobra.Command{
-		Use: "upload",
+		Use:   "upload",
+		Short: "Загрузка файла",
 		Run: func(cmd *cobra.Command, args []string) {
-			filePath := args[0]
-			file, err := os.Open(filePath)
+			file, err := os.Open(path)
 
 			if err != nil {
 				settings.Log.Fatal(err.Error())
 			}
+
+			defer file.Close()
 
 			stat, err := file.Stat()
 
@@ -38,17 +44,22 @@ func SecretsUploadCommand(client *pb.GophKeeperPrivateServiceClient, settings co
 			})
 
 			if err != nil {
-				settings.Log.Fatal(err.Error())
+				helpers.ErrorHandler(settings.Log, err)
+
+				return
 			}
 
-			var remoteOffset int64 = 0
+			var remoteOffset int64
 
 			if statusResp != nil {
 				remoteOffset = statusResp.FileOffset
 			}
 
-			if remoteOffset >= stat.Size() {
+			totalSize := stat.Size()
+
+			if remoteOffset >= totalSize {
 				fmt.Println("✅ Файл уже загружен")
+
 				return
 			}
 
@@ -62,14 +73,15 @@ func SecretsUploadCommand(client *pb.GophKeeperPrivateServiceClient, settings co
 
 			if err != nil {
 				helpers.ErrorHandler(settings.Log, err)
+
 				return
 			}
 
 			err = stream.Send(&pb.UploadRequest{Data: &pb.UploadRequest_Metadata{
 				Metadata: &pb.Metadata{
 					FileName:        stat.Name(),
-					FileContentType: mime.TypeByExtension(filepath.Ext(filePath)),
-					FileSize:        stat.Size(),
+					FileContentType: mime.TypeByExtension(filepath.Ext(path)),
+					FileSize:        totalSize,
 					FileOffset:      remoteOffset,
 				},
 			}})
@@ -78,7 +90,10 @@ func SecretsUploadCommand(client *pb.GophKeeperPrivateServiceClient, settings co
 				settings.Log.Fatal(err.Error())
 			}
 
-			buf := make([]byte, 64*1024)
+			buf := make([]byte, ChunkSize)
+			currentSent := remoteOffset
+
+			fmt.Printf("🚀 Начинаю загрузку: %s (всего %d байт)\n", stat.Name(), totalSize)
 
 			for {
 				n, err := file.Read(buf)
@@ -86,9 +101,24 @@ func SecretsUploadCommand(client *pb.GophKeeperPrivateServiceClient, settings co
 				if err == io.EOF {
 					break
 				}
+				if err != nil {
+					settings.Log.Fatal(err.Error())
+				}
 
-				stream.Send(&pb.UploadRequest{Data: &pb.UploadRequest_Chunk{Chunk: buf[:n]}})
+				err = stream.Send(&pb.UploadRequest{Data: &pb.UploadRequest_Chunk{Chunk: buf[:n]}})
+
+				if err != nil {
+					helpers.ErrorHandler(settings.Log, err)
+
+					return
+				}
+				currentSent += int64(n)
+				percentage := float64(currentSent) / float64(totalSize) * 100
+
+				fmt.Printf("\r📤 Загрузка: %.2f%% [%d / %d байт]", percentage, currentSent, totalSize)
 			}
+
+			fmt.Println()
 
 			response, err := stream.CloseAndRecv()
 
@@ -106,6 +136,9 @@ func SecretsUploadCommand(client *pb.GophKeeperPrivateServiceClient, settings co
 			}
 		},
 	}
+
+	cmd.Flags().StringVarP(&path, "path", "", path, "Путь для загрузки файла (обязательно)")
+	cmd.MarkFlagRequired("path")
 
 	return cmd
 }

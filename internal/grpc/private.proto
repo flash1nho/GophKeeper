@@ -94,4 +94,5 @@ message DownloadRequest {
 
 message DownloadResponse {
   bytes chunk = 1;
+  int64 file_offset = 2;
 }

@@ -6,7 +6,10 @@ import (
 	"crypto/cipher"
 	"encoding/json"
 	"errors"
+	"os"
+	"path/filepath"
 	"reflect"
+	"strconv"
 	"time"
 
 	"dario.cat/mergo"
@@ -19,7 +22,6 @@ import (
 
 const (
 	FileStoragePath = "./uploads"
-	ChunkSize       = 1024 * 1024 // 1MB
 )
 
 var (
@@ -36,6 +38,7 @@ type BaseSecret struct {
 	ID            int                     `json:"-"`
 	UserID        int                     `json:"-"`
 	FileName      string                  `json:"-"`
+	FileOffset    int64                   `json:"-"`
 	CreatedAt     time.Time               `json:"-"`
 	UpdatedAt     time.Time               `json:"-"`
 	CryptoManager *security.CryptoManager `json:"-"`
@@ -44,7 +47,8 @@ type BaseSecret struct {
 
 type SecretResponse struct {
 	ID        int    `json:"id"`
-	Data      any    `json:"data"`
+	fileName  string `json:"file_name"`
+	data      any    `json:"data"`
 	Type      string `json:"type"`
 	CreatedAt string `json:"created_at"`
 	UpdatedAt string `json:"updated_at"`
@@ -57,8 +61,6 @@ type Secret interface {
 	CreateValidate(ctx context.Context) error
 	UpdateValidate() error
 	FileExists(ctx context.Context) (bool, error)
-	GetFileOffset() (int64, error)
-	SetFileOffset(fileOffset int64)
 }
 
 func (baseSecret *BaseSecret) GetBaseSecret() *BaseSecret {
@@ -85,7 +87,7 @@ func Create(ctx context.Context, s Secret) ([]any, error) {
 	}
 
 	userKey, err := baseSecret.GetUserKey(ctx)
-	encryptedData, err := baseSecret.EncryptData(payload, userKey)
+	encryptedData, err := baseSecret.Encryptdata(payload, userKey)
 
 	if err != nil {
 		return nil, err
@@ -94,8 +96,8 @@ func Create(ctx context.Context, s Secret) ([]any, error) {
 	dateAt := time.Now().UTC()
 
 	query, args, err := squirrel.Insert("secrets").
-		Columns("user_id", "file_name", "encrypted_data", "type", "created_at", "updated_at").
-		Values(baseSecret.UserID, baseSecret.FileName, encryptedData, s.GetType(), dateAt, dateAt).
+		Columns("user_id", "file_name", "file_offset", "encrypted_data", "type", "created_at", "updated_at").
+		Values(baseSecret.UserID, baseSecret.FileName, baseSecret.FileOffset, encryptedData, s.GetType(), dateAt, dateAt).
 		Suffix("RETURNING id").
 		PlaceholderFormat(squirrel.Dollar).
 		ToSql()
@@ -110,7 +112,7 @@ func Create(ctx context.Context, s Secret) ([]any, error) {
 		return nil, err
 	}
 
-	query, args, err = squirrel.Select("id", "encrypted_data", "created_at", "updated_at").
+	query, args, err = squirrel.Select("id", "file_name", "encrypted_data", "created_at", "updated_at").
 		From("secrets").
 		Where(squirrel.Eq{"id": baseSecret.ID}).
 		PlaceholderFormat(squirrel.Dollar).
@@ -124,7 +126,7 @@ func Create(ctx context.Context, s Secret) ([]any, error) {
 		return nil, err
 	}
 
-	return baseSecret.Data(ctx, s, query, args)
+	return baseSecret.data(ctx, s, query, args)
 }
 
 func Get(ctx context.Context, s Secret, ID int) ([]any, error) {
@@ -134,7 +136,7 @@ func Get(ctx context.Context, s Secret, ID int) ([]any, error) {
 
 	baseSecret := s.GetBaseSecret()
 
-	query, args, err := squirrel.Select("id", "encrypted_data", "created_at", "updated_at").
+	query, args, err := squirrel.Select("id", "file_name", "encrypted_data", "created_at", "updated_at").
 		From("secrets").
 		Where(squirrel.Eq{"id": ID}).
 		Where(squirrel.Eq{"user_id": baseSecret.UserID}).
@@ -150,13 +152,13 @@ func Get(ctx context.Context, s Secret, ID int) ([]any, error) {
 		return nil, err
 	}
 
-	return baseSecret.Data(ctx, s, query, args)
+	return baseSecret.data(ctx, s, query, args)
 }
 
 func List(ctx context.Context, s Secret) ([]any, error) {
 	baseSecret := s.GetBaseSecret()
 
-	query, args, err := squirrel.Select("id", "encrypted_data", "created_at", "updated_at").
+	query, args, err := squirrel.Select("id", "file_name", "encrypted_data", "created_at", "updated_at").
 		From("secrets").
 		Where(squirrel.Eq{"user_id": baseSecret.UserID}).
 		Where(squirrel.Eq{"type": s.GetType()}).
@@ -172,7 +174,7 @@ func List(ctx context.Context, s Secret) ([]any, error) {
 		return nil, err
 	}
 
-	return baseSecret.Data(ctx, s, query, args)
+	return baseSecret.data(ctx, s, query, args)
 }
 
 func Update(ctx context.Context, s Secret, ID int) ([]any, error) {
@@ -222,7 +224,7 @@ func Update(ctx context.Context, s Secret, ID int) ([]any, error) {
 		return nil, err
 	}
 
-	oldPayload, err := baseSecret.DecryptData(encryptedData, userKey)
+	oldPayload, err := baseSecret.Decryptdata(encryptedData, userKey)
 
 	if err != nil {
 		return nil, err
@@ -234,8 +236,8 @@ func Update(ctx context.Context, s Secret, ID int) ([]any, error) {
 		return nil, err
 	}
 
-	newData := s.GetSecret()
-	newPayload, err := json.Marshal(newData)
+	newdata := s.GetSecret()
+	newPayload, err := json.Marshal(newdata)
 
 	if err != nil {
 		return nil, err
@@ -263,14 +265,15 @@ func Update(ctx context.Context, s Secret, ID int) ([]any, error) {
 		return nil, err
 	}
 
-	newEncryptedData, err := baseSecret.EncryptData(payload, userKey)
+	newEncrypteddata, err := baseSecret.Encryptdata(payload, userKey)
 
 	if err != nil {
 		return nil, err
 	}
 
 	sqlUpdate, args, err := squirrel.Update("secrets").
-		Set("encrypted_data", newEncryptedData).
+		Set("encrypted_data", newEncrypteddata).
+		Set("file_offset", baseSecret.FileOffset).
 		Set("updated_at", time.Now().UTC()).
 		Where(squirrel.Eq{"id": ID}).
 		Where(squirrel.Eq{"user_id": baseSecret.UserID}).
@@ -294,7 +297,7 @@ func Update(ctx context.Context, s Secret, ID int) ([]any, error) {
 		return nil, err
 	}
 
-	query, args, err := squirrel.Select("id", "encrypted_data", "created_at", "updated_at").
+	query, args, err := squirrel.Select("id", "file_name", "encrypted_data", "created_at", "updated_at").
 		From("secrets").
 		Where(squirrel.Eq{"id": ID}).
 		Where(squirrel.Eq{"user_id": baseSecret.UserID}).
@@ -310,7 +313,7 @@ func Update(ctx context.Context, s Secret, ID int) ([]any, error) {
 		return nil, err
 	}
 
-	return baseSecret.Data(ctx, s, query, args)
+	return baseSecret.data(ctx, s, query, args)
 }
 
 func Delete(ctx context.Context, s Secret, ID int) error {
@@ -319,9 +322,10 @@ func Delete(ctx context.Context, s Secret, ID int) error {
 	}
 
 	baseSecret := s.GetBaseSecret()
+	baseSecret.ID = ID
 
 	query, args, err := squirrel.Delete("secrets").
-		Where(squirrel.Eq{"id": ID}).
+		Where(squirrel.Eq{"id": baseSecret.ID}).
 		Where(squirrel.Eq{"user_id": baseSecret.UserID}).
 		Where(squirrel.Eq{"type": s.GetType()}).
 		PlaceholderFormat(squirrel.Dollar).
@@ -341,10 +345,20 @@ func Delete(ctx context.Context, s Secret, ID int) error {
 		return ErrEmptyRows
 	}
 
+	if s.GetType() == "File" {
+		err = os.Remove(baseSecret.GetFilePath())
+
+		if err != nil {
+			if !os.IsNotExist(err) {
+				return err
+			}
+		}
+	}
+
 	return nil
 }
 
-func (baseSecret *BaseSecret) Data(ctx context.Context, s Secret, query string, args []interface{}) ([]any, error) {
+func (baseSecret *BaseSecret) data(ctx context.Context, s Secret, query string, args []interface{}) ([]any, error) {
 	userKey, err := baseSecret.GetUserKey(ctx)
 
 	if err != nil {
@@ -375,17 +389,18 @@ func (baseSecret *BaseSecret) Data(ctx context.Context, s Secret, query string, 
 
 	for rows.Next() {
 		var id int
+		var fileName string
 		var encryptedData []byte
 		var createdAt time.Time
 		var updatedAt time.Time
 
-		err = rows.Scan(&id, &encryptedData, &createdAt, &updatedAt)
+		err = rows.Scan(&id, &fileName, &encryptedData, &createdAt, &updatedAt)
 
 		if err != nil {
 			return nil, err
 		}
 
-		decryptedData, err := baseSecret.DecryptData(encryptedData, userKey)
+		decrypteddata, err := baseSecret.Decryptdata(encryptedData, userKey)
 
 		if err != nil {
 			return nil, err
@@ -393,7 +408,7 @@ func (baseSecret *BaseSecret) Data(ctx context.Context, s Secret, query string, 
 
 		secret := reflect.New(targetType).Interface()
 
-		err = json.Unmarshal(decryptedData, secret)
+		err = json.Unmarshal(decrypteddata, secret)
 
 		if err != nil {
 			return nil, err
@@ -401,7 +416,8 @@ func (baseSecret *BaseSecret) Data(ctx context.Context, s Secret, query string, 
 
 		result := SecretResponse{
 			ID:        id,
-			Data:      secret,
+			fileName:  fileName,
+			data:      secret,
 			Type:      s.GetType(),
 			CreatedAt: createdAt.Format("02.01.2006 15:04:05"),
 			UpdatedAt: updatedAt.Format("02.01.2006 15:04:05"),
@@ -449,24 +465,24 @@ func (baseSecret *BaseSecret) GetUserKey(ctx context.Context) ([]byte, error) {
 	return baseSecret.CryptoManager.Decrypt(encryptedSecret, baseSecret.CryptoManager.MasterKey)
 }
 
-func (baseSecret *BaseSecret) DecryptData(encryptedData []byte, userKey []byte) ([]byte, error) {
-	decryptedUserData, err := baseSecret.CryptoManager.Decrypt(encryptedData, baseSecret.CryptoManager.MasterKey)
+func (baseSecret *BaseSecret) Decryptdata(encryptedData []byte, userKey []byte) ([]byte, error) {
+	decryptedUserdata, err := baseSecret.CryptoManager.Decrypt(encryptedData, baseSecret.CryptoManager.MasterKey)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return baseSecret.CryptoManager.Decrypt(decryptedUserData, userKey)
+	return baseSecret.CryptoManager.Decrypt(decryptedUserdata, userKey)
 }
 
-func (baseSecret *BaseSecret) EncryptData(data []byte, userKey []byte) ([]byte, error) {
-	encryptedUserData, err := baseSecret.CryptoManager.Encrypt(data, userKey)
+func (baseSecret *BaseSecret) Encryptdata(data []byte, userKey []byte) ([]byte, error) {
+	encryptedUserdata, err := baseSecret.CryptoManager.Encrypt(data, userKey)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return baseSecret.CryptoManager.Encrypt(encryptedUserData, baseSecret.CryptoManager.MasterKey)
+	return baseSecret.CryptoManager.Encrypt(encryptedUserdata, baseSecret.CryptoManager.MasterKey)
 }
 
 func (baseSecret *BaseSecret) EncryptStream(data []byte, userKey []byte, offset int64) ([]byte, error) {
@@ -505,4 +521,47 @@ func (baseSecret *BaseSecret) EncryptStream(data []byte, userKey []byte, offset 
 	}
 
 	return final, nil
+}
+
+func (baseSecret *BaseSecret) DecryptStream(data []byte, userKey []byte, offset int64) ([]byte, error) {
+	applyLayer := func(input []byte, key []byte) ([]byte, error) {
+		key = baseSecret.CryptoManager.ConverKeyToSha256(key)
+
+		block, err := aes.NewCipher(key)
+
+		if err != nil {
+			return nil, err
+		}
+
+		zeroIV := make([]byte, aes.BlockSize)
+		stream := cipher.NewCTR(block, zeroIV)
+
+		if offset > 0 {
+			discard := make([]byte, offset)
+			stream.XORKeyStream(discard, discard)
+		}
+
+		output := make([]byte, len(input))
+		stream.XORKeyStream(output, input)
+
+		return output, nil
+	}
+
+	layer1, err := applyLayer(data, baseSecret.CryptoManager.MasterKey)
+
+	if err != nil {
+		return nil, err
+	}
+
+	final, err := applyLayer(layer1, userKey)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return final, nil
+}
+
+func (baseSecret *BaseSecret) GetFilePath() string {
+	return filepath.Join(FileStoragePath, strconv.Itoa(baseSecret.ID))
 }

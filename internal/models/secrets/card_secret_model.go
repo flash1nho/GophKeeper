@@ -101,13 +101,6 @@ func (s *Card) FileExists(ctx context.Context) (bool, error) {
 	return false, ErrNotImplemented
 }
 
-func (s *Card) GetFileOffset() (int64, error) {
-	return 0, ErrNotImplemented
-}
-
-func (s *Card) SetFileOffset(fileOffset int64) {
-}
-
 func (s *Card) validationFields() []struct{ name, value string } {
 	return []struct {
 		name  string
