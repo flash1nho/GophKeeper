@@ -3,7 +3,7 @@ package config
 import (
 	"os"
 
-	_ "embed"
+	"embed"
 
 	"github.com/flash1nho/GophKeeper/internal/logger"
 
@@ -11,8 +11,8 @@ import (
 	"go.uber.org/zap"
 )
 
-//go:embed .env
-var envFile string
+//go:embed all:.env*
+var envFiles embed.FS
 
 type SettingsObject struct {
 	DatabaseDSN       string
@@ -28,7 +28,13 @@ func Settings() SettingsObject {
 		logger.Log.Fatal("Ошибка загрузки logger")
 	}
 
-	env, err := godotenv.Unmarshal(envFile)
+	data, err := envFiles.ReadFile(".env")
+
+	if err != nil {
+		data, _ = envFiles.ReadFile(".env.example")
+	}
+
+	env, err := godotenv.Unmarshal(string(data))
 
 	if err != nil {
 		logger.Log.Fatal("Ошибка парсинга встроенного .env файла", zap.Error(err))
