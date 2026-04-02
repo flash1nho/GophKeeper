@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/aes"
 	"crypto/cipher"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"os"
@@ -47,8 +48,8 @@ type BaseSecret struct {
 
 type SecretResponse struct {
 	ID        int    `json:"id"`
-	fileName  string `json:"file_name"`
-	data      any    `json:"data"`
+	FileName  string `json:"file_name"`
+	Data      any    `json:"data"`
 	Type      string `json:"type"`
 	CreatedAt string `json:"created_at"`
 	UpdatedAt string `json:"updated_at"`
@@ -87,6 +88,11 @@ func Create(ctx context.Context, s Secret) ([]any, error) {
 	}
 
 	userKey, err := baseSecret.GetUserKey(ctx)
+
+	if err != nil {
+		return nil, err
+	}
+
 	encryptedData, err := baseSecret.Encryptdata(payload, userKey)
 
 	if err != nil {
@@ -177,7 +183,7 @@ func List(ctx context.Context, s Secret) ([]any, error) {
 	return baseSecret.data(ctx, s, query, args)
 }
 
-func Update(ctx context.Context, s Secret, ID int) ([]any, error) {
+func Update(ctx context.Context, s Secret, ID int, resErr error) ([]any, error) {
 	if ID == 0 {
 		return nil, ErrIDEmpty
 	}
@@ -189,7 +195,12 @@ func Update(ctx context.Context, s Secret, ID int) ([]any, error) {
 	}
 
 	baseSecret := s.GetBaseSecret()
+
 	userKey, err := baseSecret.GetUserKey(ctx)
+
+  if err != nil {
+  	return nil, err
+  }
 
 	tx, err := baseSecret.pool.Begin(ctx)
 
@@ -197,7 +208,13 @@ func Update(ctx context.Context, s Secret, ID int) ([]any, error) {
 		return nil, err
 	}
 
-	defer tx.Rollback(ctx)
+	defer func() {
+		err := tx.Rollback(ctx)
+
+		if err != nil && err != sql.ErrTxDone {
+			resErr = err
+		}
+	}()
 
 	sqlSelect, args, err := squirrel.Select("encrypted_data").
 		From("secrets").
@@ -416,8 +433,8 @@ func (baseSecret *BaseSecret) data(ctx context.Context, s Secret, query string, 
 
 		result := SecretResponse{
 			ID:        id,
-			fileName:  fileName,
-			data:      secret,
+			FileName:  fileName,
+			Data:      secret,
 			Type:      s.GetType(),
 			CreatedAt: createdAt.Format("02.01.2006 15:04:05"),
 			UpdatedAt: updatedAt.Format("02.01.2006 15:04:05"),

@@ -46,7 +46,7 @@ func SecretsGetCommand(client *pb.GophKeeperPrivateServiceClient, settings confi
 	}
 
 	cmd.Flags().IntVarP(&id, "id", "", id, "id (обязательно)")
-	cmd.MarkFlagRequired("id")
+	_ = cmd.MarkFlagRequired("id")
 
 	return cmd
 }

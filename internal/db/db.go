@@ -12,7 +12,7 @@ import (
 )
 
 func NewDB(databaseDSN string) (*pgxpool.Pool, error) {
-	var pool *pgxpool.Pool = nil
+	var pool *pgxpool.Pool
 	var err error
 
 	if databaseDSN == "" {

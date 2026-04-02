@@ -33,10 +33,8 @@ func UsersLoginCommand(client *pb.GophKeeperPublicServiceClient, settings config
 			}
 
 			viper.Set("token", response.Token)
-
-			if err := viper.WriteConfig(); err != nil {
-				viper.SafeWriteConfig()
-			}
+			_ = viper.WriteConfig()
+			_ = viper.SafeWriteConfig()
 
 			fmt.Println("✅ Успешный вход!")
 		},
@@ -44,8 +42,8 @@ func UsersLoginCommand(client *pb.GophKeeperPublicServiceClient, settings config
 
 	cmd.Flags().StringVarP(&login, "login", "l", "", "Логин (обязательно)")
 	cmd.Flags().StringVarP(&password, "password", "p", "", "Пароль (обязательно)")
-	cmd.MarkFlagRequired("login")
-	cmd.MarkFlagRequired("password")
+	_ = cmd.MarkFlagRequired("login")
+	_ = cmd.MarkFlagRequired("password")
 
 	return cmd
 }

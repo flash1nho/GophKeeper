@@ -138,7 +138,7 @@ func SecretsUploadCommand(client *pb.GophKeeperPrivateServiceClient, settings co
 	}
 
 	cmd.Flags().StringVarP(&path, "path", "", path, "Путь для загрузки файла (обязательно)")
-	cmd.MarkFlagRequired("path")
+	_ = cmd.MarkFlagRequired("path")
 
 	return cmd
 }

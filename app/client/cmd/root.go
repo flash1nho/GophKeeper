@@ -25,7 +25,7 @@ func Execute() {
 	rootCmd.AddCommand(UsersCommand(settings))
 	rootCmd.AddCommand(SecretsCommand(settings))
 
-	rootCmd.Execute()
+	_ = rootCmd.Execute()
 }
 
 func initConfig() {
@@ -35,5 +35,5 @@ func initConfig() {
 	viper.SetConfigFile(cfgPath)
 	viper.SetConfigType("yaml")
 
-	viper.ReadInConfig()
+	_ = viper.ReadInConfig()
 }

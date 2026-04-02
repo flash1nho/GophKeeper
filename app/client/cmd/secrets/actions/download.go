@@ -90,8 +90,8 @@ func SecretsDownloadCommand(client *pb.GophKeeperPrivateServiceClient, settings 
 
 	cmd.Flags().Int32VarP(&id, "id", "", id, "ID секрета (обязательно)")
 	cmd.Flags().StringVarP(&outputPath, "out", "", outputPath, "Путь для сохранения файла (обязательно)")
-	cmd.MarkFlagRequired("id")
-	cmd.MarkFlagRequired("out")
+	_ = cmd.MarkFlagRequired("id")
+	_ = cmd.MarkFlagRequired("out")
 
 	return cmd
 }

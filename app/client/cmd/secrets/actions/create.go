@@ -10,7 +10,6 @@ import (
 	pb "github.com/flash1nho/GophKeeper/internal/grpc"
 )
 
-// Убрали указатель у клиента, так как это интерфейс
 func SecretsCreateCommand(client *pb.GophKeeperPrivateServiceClient, settings config.SettingsObject, fields []helpers.FieldInfo) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "create",
@@ -54,7 +53,7 @@ func SecretsCreateCommand(client *pb.GophKeeperPrivateServiceClient, settings co
 			var str string
 
 			cmd.Flags().StringVarP(&str, field.Key, "", str, fmt.Sprintf("%s (обязательно)", field.Key))
-			cmd.MarkFlagRequired(field.Key)
+			_ = cmd.MarkFlagRequired(field.Key)
 		default:
 			settings.Log.Fatal("недопустимый тип для создания флага")
 		}

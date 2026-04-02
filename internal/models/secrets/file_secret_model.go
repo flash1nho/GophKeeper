@@ -13,7 +13,6 @@ import (
 )
 
 var (
-	ErrFileExists    = errors.New("файл существует")
 	ErrEmptyFileName = errors.New("название файла не может быть пустым")
 )
 
@@ -46,16 +45,6 @@ func (s *File) GetSecret() any {
 func (s *File) CreateValidate(ctx context.Context) error {
 	if strings.TrimSpace(s.FileName) == "" {
 		return ErrEmptyFileName
-	}
-
-	fileExists, err := s.FileExists(ctx)
-
-	if err != nil {
-		return err
-	}
-
-	if fileExists {
-		return ErrFileExists
 	}
 
 	return nil

@@ -8,8 +8,6 @@ import (
 	pb "github.com/flash1nho/GophKeeper/internal/grpc"
 )
 
-var stateFile = ".upload_offsets"
-
 func FileCommand(client *pb.GophKeeperPrivateServiceClient, settings config.SettingsObject) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "file",

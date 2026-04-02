@@ -6,7 +6,6 @@ import (
 	"crypto/x509"
 	"errors"
 	"os"
-	"time"
 
 	"github.com/flash1nho/GophKeeper/certs"
 	"github.com/flash1nho/GophKeeper/config"
@@ -64,19 +63,15 @@ func BaseConnection(settings config.SettingsObject, token string) (*grpc.ClientC
 
 	creds := credentials.NewTLS(tlsConfig)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
 	opts := []grpc.DialOption{
 		grpc.WithTransportCredentials(creds),
-		grpc.WithBlock(),
 	}
 
 	if token != "" {
 		opts = append(opts, grpc.WithPerRPCCredentials(jwtCredentials{token: token}))
 	}
 
-	conn, err := grpc.DialContext(ctx, settings.GrpcServerAddress, opts...)
+	conn, err := grpc.NewClient(settings.GrpcServerAddress, opts...)
 
 	if err != nil {
 		return nil, ErrConnectionFailed

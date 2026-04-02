@@ -36,14 +36,7 @@ jobs:
     - name: Run tests
       run: go test -v -race -coverprofile=coverage.out ./...
 
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
-      with:
-        file: ./coverage.out
-        flags: unittests
-        name: codecov-umbrella
-
     - name: Build
-      run: go build -v ./cmd/...
+      run: go build -v -o ../../bin/gophkeeper-client-${{ matrix.os }}-${{ matrix.arch }} .
       env:
         GOOS: ${{ runner.os == 'macOS' && 'darwin' || runner.os == 'windows' && 'windows' || 'linux' }}

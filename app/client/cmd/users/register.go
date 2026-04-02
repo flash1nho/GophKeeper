@@ -35,10 +35,8 @@ func UsersRegisterCommand(client *pb.GophKeeperPublicServiceClient, settings con
 			}
 
 			viper.Set("token", response.Token)
-
-			if err := viper.WriteConfig(); err != nil {
-				viper.SafeWriteConfig()
-			}
+			_ = viper.WriteConfig()
+			_ = viper.SafeWriteConfig()
 
 			fmt.Println("✅ Успешная регистрация!")
 		},
@@ -47,9 +45,9 @@ func UsersRegisterCommand(client *pb.GophKeeperPublicServiceClient, settings con
 	cmd.Flags().StringVarP(&login, "login", "l", "", "Логин (обязательно)")
 	cmd.Flags().StringVarP(&password, "password", "p", "", "Пароль (обязательно)")
 	cmd.Flags().StringVarP(&secret, "secret", "s", "", "Секретное слово (обязательно)")
-	cmd.MarkFlagRequired("login")
-	cmd.MarkFlagRequired("password")
-	cmd.MarkFlagRequired("secret")
+	_ = cmd.MarkFlagRequired("login")
+	_ = cmd.MarkFlagRequired("password")
+	_ = cmd.MarkFlagRequired("secret")
 
 	return cmd
 }

@@ -17,9 +17,13 @@ type SettingsObject struct {
 }
 
 func Settings() SettingsObject {
-	logger.Initialize("info")
+	err := logger.Initialize("info")
 
-	err := godotenv.Load()
+	if err != nil {
+		logger.Log.Fatal("Ошибка загрузки logger")
+	}
+
+	err = godotenv.Load()
 
 	if err != nil {
 		logger.Log.Fatal("Ошибка загрузки .env файла")

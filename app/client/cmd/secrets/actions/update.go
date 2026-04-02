@@ -47,7 +47,7 @@ func SecretsUpdateCommand(client *pb.GophKeeperPrivateServiceClient, settings co
 	}
 
 	cmd.Flags().IntVarP(&id, "id", "", id, "id (обязательно)")
-	cmd.MarkFlagRequired("id")
+	_ = cmd.MarkFlagRequired("id")
 
 	for _, field := range fields {
 		switch field.Type {

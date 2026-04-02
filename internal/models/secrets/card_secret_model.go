@@ -180,7 +180,8 @@ func GetCardType(number string) string {
 }
 
 func FormatCardNumber(number string) string {
-	number = strings.ReplaceAll(number, " ", "")
+	re := regexp.MustCompile(`\D`)
+	number = re.ReplaceAllString(number, "")
 	formatted := numberRegex.ReplaceAllString(number, "$1 ")
 
 	return strings.TrimSpace(formatted)

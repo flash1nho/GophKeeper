@@ -131,7 +131,12 @@ func (g *GrpcPrivateHandler) Update(ctx context.Context, req *UpdateRequest) (*U
 		return nil, err
 	}
 
-	res, err := secrets.Update(ctx, secret, int(req.ID))
+	var resErr error
+	res, err := secrets.Update(ctx, secret, int(req.ID), resErr)
+
+	if resErr != nil {
+		err = resErr
+	}
 
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "ошибка при обновлении секрета: %v", err)
@@ -210,7 +215,6 @@ func (g *GrpcPrivateHandler) Upload(stream GophKeeperPrivateService_UploadServer
 
 	defer func() {
 		if file != nil {
-			file.Sync()
 			file.Close()
 		}
 
@@ -219,7 +223,12 @@ func (g *GrpcPrivateHandler) Upload(stream GophKeeperPrivateService_UploadServer
 			defer cancel()
 
 			baseSecret.FileOffset = currentOffset
-			_, err = secrets.Update(dbCtx, secret, baseSecret.ID)
+			var resErr error
+			_, err = secrets.Update(dbCtx, secret, baseSecret.ID, resErr)
+
+			if resErr != nil {
+				err = resErr
+			}
 
 			if err != nil {
 				g.settings.Log.Error("ошибка при обновлении оффсета", zap.Error(err))
@@ -323,7 +332,7 @@ func (g *GrpcPrivateHandler) Download(req *DownloadRequest, stream GophKeeperPri
 		return status.Errorf(codes.NotFound, "секрет не найден: %v", err)
 	}
 
-  _, err = secret.FileExists(ctx)
+	_, err = secret.FileExists(ctx)
 
 	if err != nil {
 		return err
