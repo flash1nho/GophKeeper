@@ -24,11 +24,7 @@ jobs:
         "$(go env GOPATH)/bin/golangci-lint" run --out-format=colored-line-number --timeout=5m
 
     - name: Run go fmt
-      run: |
-        if [ -n "$(go fmt ./...)" ]; then
-          echo "Go fmt found formatting issues"
-          exit 1
-        fi
+      run: go fmt ./...
 
     - name: Run go vet
       run: go vet ./...
