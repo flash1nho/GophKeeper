@@ -1,8 +1,8 @@
 package cmd
 
 import (
-	"testing"
 	"context"
+	"testing"
 
 	"github.com/stretchr/testify/assert"
 )

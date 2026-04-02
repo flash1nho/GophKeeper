@@ -198,9 +198,9 @@ func Update(ctx context.Context, s Secret, ID int, resErr error) ([]any, error) 
 
 	userKey, err := baseSecret.GetUserKey(ctx)
 
-  if err != nil {
-  	return nil, err
-  }
+	if err != nil {
+		return nil, err
+	}
 
 	tx, err := baseSecret.pool.Begin(ctx)
 

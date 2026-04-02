@@ -11,7 +11,13 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [linux, darwin, windows]
+        arch: [amd64, arm64]
+        exclude:
+          - os: windows
+            arch: arm64
+          - os: darwin
+            arch: arm64
         go-version: ['1.25.0']
 
     steps:
@@ -36,7 +42,11 @@ jobs:
     - name: Run tests
       run: go test -v -race -coverprofile=coverage.out ./...
 
-    - name: Build
-      run: go build -v -o ../../bin/gophkeeper-client-${{ matrix.os }}-${{ matrix.arch }} .
+    - name: Build client for ${{ matrix.os }}/${{ matrix.arch }}
+      working-directory: ./app/client
       env:
-        GOOS: ${{ runner.os == 'macOS' && 'darwin' || runner.os == 'windows' && 'windows' || 'linux' }}
+        GOOS: ${{ matrix.os }}
+        GOARCH: ${{ matrix.arch }}
+        CGO_ENABLED: 0
+      run: |
+        go build -v -o ../../bin/gophkeeper-client-${{ matrix.os }}-${{ matrix.arch }} .
