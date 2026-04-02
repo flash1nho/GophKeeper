@@ -2,12 +2,13 @@
 
 ## Содержание
 1. [Введение](#введение)
-2. [Установка](#установка)
-3. [Начало работы](#начало-работы)
-4. [Аутентификация](#аутентификация)
-5. [Управление секретами](#управление-секретами)
-6. [Примеры использования](#примеры-использования)
-7. [Команды справки](#команды-справки)
+2. [Запуск сервера](#запуск-сервера)
+3. [Установка](#установка)
+4. [Начало работы](#начало-работы)
+5. [Аутентификация](#аутентификация)
+6. [Управление секретами](#управление-секретами)
+7. [Примеры использования](#примеры-использования)
+8. [Команды справки](#команды-справки)
 
 ---
 
@@ -47,15 +48,15 @@ docker-compose up
 
 ```bash
 # Linux
-wget https://github.com/flash1nho/GophKeeper/releases/download/v1.0.0/gophkeeper-client-linux-amd64
+wget https://github.com/flash1nho/GophKeeper/tree/main/releases/download/v1.0.0/gophkeeper-client-linux-amd64
 chmod +x gophkeeper-client-linux-amd64
 
 # macOS (Apple Silicon)
-wget https://github.com/flash1nho/GophKeeper/releases/download/v1.0.0/gophkeeper-client-darwin-arm64
+wget https://github.com/flash1nho/GophKeeper/tree/main/releases/download/v1.0.0/gophkeeper-client-darwin-arm64
 chmod +x gophkeeper-client-darwin-arm64
 
 # Windows
-https://github.com/flash1nho/GophKeeper/releases/download/v1.0.0/gophkeeper-client-windows-amd64.exe
+https://github.com/flash1nho/GophKeeper/tree/main/releases/download/v1.0.0/gophkeeper-client-windows-amd64.exe
 ```
 
 ### 2. Добавьте в PATH
@@ -81,11 +82,11 @@ gophkeeper --version
 
 ### 1. Инициализация конфигурации
 
-При первом запуске создайте конфигурационный файл:
+При первом запуске создайте конфигурационный файл `.env`:
 
 ```bash
 # token авторизации создается автоматически в ~/.gophkeeper.yaml
-gophkeeper users register -l my_login -p my_password -s my_secret_word
+gophkeeper users register --login my_login --password my_password --secret my_secret_word
 ```
 
 ### 2. Переменные окружения
@@ -113,13 +114,13 @@ gophkeeper users register \
 ```
 
 **Параметры:**
-- `--login, -l` (обязательно) — уникальный логин пользователя
-- `--password, -p` (обязательно) — пароль
-- `--secret, -s` (обязательно) — секретное слово для восстановления доступа
+- `--login` (обязательно) — уникальный логин пользователя
+- `--password` (обязательно) — пароль
+- `--secret` (обязательно) — секретное слово для восстановления доступа
 
 **Пример:**
 ```bash
-gophkeeper users register -l john_doe -p MySecurePass123 -s MySecretWord42
+gophkeeper users register --login john_doe --password MySecurePass123 --secret MySecretWord42
 ```
 
 **Результат:**
@@ -138,12 +139,12 @@ gophkeeper users login \
 ```
 
 **Параметры:**
-- `--login, -l` (обязательно) — ваш логин
-- `--password, -p` (обязательно) — ваш пароль
+- `--login` (обязательно) — ваш логин
+- `--password` (обязательно) — ваш пароль
 
 **Пример:**
 ```bash
-gophkeeper users login -l john_doe -p MySecurePass123
+gophkeeper users login --login john_doe --password MySecurePass123
 ```
 
 **Результат:**
@@ -521,7 +522,7 @@ gophkeeper secrets file --help
 
 ```bash
 # 1. Войдите в систему
-gophkeeper users login -l john_doe -p MyPassword
+gophkeeper users login --login john_doe --password MyPassword
 
 # 2. Сохраните пароль
 gophkeeper secrets cred create \
@@ -552,11 +553,11 @@ gophkeeper secrets file download --id 1 --out ~/Downloads/contract.pdf
 
 ```bash
 # Устройство 1:
-gophkeeper users login -l john_doe -p MyPassword
+gophkeeper users login --login john_doe --password MyPassword
 gophkeeper secrets cred list  # Все ваши секреты загружены
 
 # Устройство 2:
-gophkeeper users login -l john_doe -p MyPassword
+gophkeeper users login --login john_doe --password MyPassword
 gophkeeper secrets cred list  # Те же секреты!
 ```
 
@@ -572,7 +573,7 @@ gophkeeper secrets cred list  # Те же секреты!
 
 **Решение:**
 ```bash
-gophkeeper users login -l your_login -p your_password
+gophkeeper users login --login your_login --password your_password
 ```
 
 ### Ошибка: "Не удалось подключиться"
@@ -599,42 +600,6 @@ gophkeeper users login -l your_login -p your_password
 **Решение:**
 1. Убедитесь, что папка `internal/certs/` находится в корневой директории
 2. Файлы `ca.crt`, `client.crt`, `client.key` должны быть на месте
-
----
-
-## Советы и рекомендации
-
-### 1. Безопасность паролей
-
-- Используйте длинные пароли (минимум 12 символов)
-- Включайте заглавные буквы, цифры, специальные символы
-- Не используйте личные данные в паролях
-
-### 2. Резервное копирование
-
-- Регулярно скачивайте важные файлы
-- Сохраняйте секретное слово в безопасном месте
-- Ведите записи ID важных секретов
-
-### 3. Работа с большими файлами
-
-- Для файлов > 500MB используйте проводное соединение
-- Не выключайте компьютер во время загрузки
-- Проверяйте скорость интернета
-
-### 4. Автоматизация
-
-```bash
-#!/bin/bash
-# backup.sh - автоматическое скачивание всех файлов
-
-gophkeeper users login -l $LOGIN -p $PASSWORD
-
-# Получите ID файлов из списка
-gophkeeper secrets file list | grep "id:" | awk '{print $2}' | while read id; do
-    gophkeeper secrets file download --id $id --out ~/backup/file_$id
-done
-```
 
 ---
 
