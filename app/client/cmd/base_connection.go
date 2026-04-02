@@ -5,18 +5,16 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
-	"os"
 
-	"github.com/flash1nho/GophKeeper/certs"
 	"github.com/flash1nho/GophKeeper/config"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+
+	"github.com/flash1nho/GophKeeper/internal/certs"
 )
 
 var (
-	ErrCertsNotFound    = errors.New("сертификаты не найдены")
 	ErrLoadClientCert   = errors.New("не удалось загрузить сертификат клиента")
-	ErrReadCACert       = errors.New("не удалось прочитать CA сертификат")
 	ErrAppendCACert     = errors.New("не удалось добавить CA сертификат")
 	ErrConnectionFailed = errors.New("не удалось подключиться")
 )
@@ -36,23 +34,15 @@ func (j jwtCredentials) RequireTransportSecurity() bool {
 }
 
 func BaseConnection(settings config.SettingsObject, token string) (*grpc.ClientConn, error) {
-	certs, err := certs.NewCerts("client")
-	if err != nil {
-		return nil, ErrCertsNotFound
-	}
+	clientCert, err := tls.X509KeyPair(certs.ClientCrt, certs.ClientKey)
 
-	clientCert, err := tls.LoadX509KeyPair(certs.Cert, certs.Key)
 	if err != nil {
 		return nil, ErrLoadClientCert
 	}
 
-	certCA, err := os.ReadFile(certs.CertCA)
-	if err != nil {
-		return nil, ErrReadCACert
-	}
-
 	certPool := x509.NewCertPool()
-	if !certPool.AppendCertsFromPEM(certCA) {
+
+	if !certPool.AppendCertsFromPEM(certs.CaCrt) {
 		return nil, ErrAppendCACert
 	}
 

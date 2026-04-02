@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"net"
 	"os"
@@ -14,10 +15,9 @@ import (
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
 	"google.golang.org/grpc"
 
+	"github.com/flash1nho/GophKeeper/internal/certs"
 	"github.com/flash1nho/GophKeeper/internal/interceptors"
 	"google.golang.org/grpc/credentials"
-
-	"github.com/flash1nho/GophKeeper/certs"
 
 	"go.uber.org/zap"
 )
@@ -34,17 +34,15 @@ func NewService(handler *pb.GrpcHandler) *Service {
 
 func runGrpcServer(ctx context.Context, s *Service) {
 	serverErr := make(chan error, 1)
-	certs, err := certs.NewCerts("server")
-
-	if err != nil {
-		s.Handler.Settings.Log.Error("Сертификаты не найдены", zap.Error(err))
-	}
-
-	creds, err := credentials.NewServerTLSFromFile(certs.Cert, certs.Key)
+	cert, err := tls.X509KeyPair(certs.ServerCrt, certs.ServerKey)
 
 	if err != nil {
 		s.Handler.Settings.Log.Error("Не удалось настроить TLS", zap.Error(err))
 	}
+
+	creds := credentials.NewTLS(&tls.Config{
+		Certificates: []tls.Certificate{cert},
+	})
 
 	loggingInterceptor := logging.UnaryServerInterceptor(interceptors.InterceptorLogger(s.Handler.Settings.Log))
 	authInterceptor := interceptors.InterceptorAuth(s.Handler.Pool, s.Handler.Settings)

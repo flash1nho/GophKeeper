@@ -3,11 +3,16 @@ package config
 import (
 	"os"
 
+	_ "embed"
+
 	"github.com/flash1nho/GophKeeper/internal/logger"
 
 	"github.com/joho/godotenv"
 	"go.uber.org/zap"
 )
+
+//go:embed .env
+var envFile string
 
 type SettingsObject struct {
 	DatabaseDSN       string
@@ -23,10 +28,16 @@ func Settings() SettingsObject {
 		logger.Log.Fatal("Ошибка загрузки logger")
 	}
 
-	err = godotenv.Load()
+	env, err := godotenv.Unmarshal(envFile)
 
 	if err != nil {
-		logger.Log.Fatal("Ошибка загрузки .env файла")
+		logger.Log.Fatal("Ошибка парсинга встроенного .env файла", zap.Error(err))
+	}
+
+	for key, value := range env {
+		if _, exists := os.LookupEnv(key); !exists {
+			os.Setenv(key, value)
+		}
 	}
 
 	return SettingsObject{

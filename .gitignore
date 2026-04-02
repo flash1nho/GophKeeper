@@ -1,8 +1,4 @@
-.env
+/config/.env
 docker-compose.yml
 /uploads/*
 !/uploads/.gitkeep
-
-/bin/client/darwin/*
-/bin/client/linux/*
-/bin/client/windows/*

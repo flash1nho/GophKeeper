@@ -78,7 +78,6 @@ func TestFileGetSecret(t *testing.T) {
 	file := &File{
 		BaseSecret: BaseSecret{CryptoManager: cryptoManager},
 		FileName:   "test.txt",
-		FileSize:   1024,
 	}
 
 	secret := file.GetSecret()

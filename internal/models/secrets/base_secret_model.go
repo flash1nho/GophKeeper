@@ -48,7 +48,6 @@ type BaseSecret struct {
 
 type SecretResponse struct {
 	ID        int    `json:"id"`
-	FileName  string `json:"file_name"`
 	Data      any    `json:"data"`
 	Type      string `json:"type"`
 	CreatedAt string `json:"created_at"`
@@ -118,7 +117,7 @@ func Create(ctx context.Context, s Secret) ([]any, error) {
 		return nil, err
 	}
 
-	query, args, err = squirrel.Select("id", "file_name", "encrypted_data", "created_at", "updated_at").
+	query, args, err = squirrel.Select("id", "encrypted_data", "created_at", "updated_at").
 		From("secrets").
 		Where(squirrel.Eq{"id": baseSecret.ID}).
 		PlaceholderFormat(squirrel.Dollar).
@@ -142,7 +141,7 @@ func Get(ctx context.Context, s Secret, ID int) ([]any, error) {
 
 	baseSecret := s.GetBaseSecret()
 
-	query, args, err := squirrel.Select("id", "file_name", "encrypted_data", "created_at", "updated_at").
+	query, args, err := squirrel.Select("id", "encrypted_data", "created_at", "updated_at").
 		From("secrets").
 		Where(squirrel.Eq{"id": ID}).
 		Where(squirrel.Eq{"user_id": baseSecret.UserID}).
@@ -164,7 +163,7 @@ func Get(ctx context.Context, s Secret, ID int) ([]any, error) {
 func List(ctx context.Context, s Secret) ([]any, error) {
 	baseSecret := s.GetBaseSecret()
 
-	query, args, err := squirrel.Select("id", "file_name", "encrypted_data", "created_at", "updated_at").
+	query, args, err := squirrel.Select("id", "encrypted_data", "created_at", "updated_at").
 		From("secrets").
 		Where(squirrel.Eq{"user_id": baseSecret.UserID}).
 		Where(squirrel.Eq{"type": s.GetType()}).
@@ -314,7 +313,7 @@ func Update(ctx context.Context, s Secret, ID int, resErr error) ([]any, error) 
 		return nil, err
 	}
 
-	query, args, err := squirrel.Select("id", "file_name", "encrypted_data", "created_at", "updated_at").
+	query, args, err := squirrel.Select("id", "encrypted_data", "created_at", "updated_at").
 		From("secrets").
 		Where(squirrel.Eq{"id": ID}).
 		Where(squirrel.Eq{"user_id": baseSecret.UserID}).
@@ -406,12 +405,11 @@ func (baseSecret *BaseSecret) data(ctx context.Context, s Secret, query string, 
 
 	for rows.Next() {
 		var id int
-		var fileName string
 		var encryptedData []byte
 		var createdAt time.Time
 		var updatedAt time.Time
 
-		err = rows.Scan(&id, &fileName, &encryptedData, &createdAt, &updatedAt)
+		err = rows.Scan(&id, &encryptedData, &createdAt, &updatedAt)
 
 		if err != nil {
 			return nil, err
@@ -433,7 +431,6 @@ func (baseSecret *BaseSecret) data(ctx context.Context, s Secret, query string, 
 
 		result := SecretResponse{
 			ID:        id,
-			FileName:  fileName,
 			Data:      secret,
 			Type:      s.GetType(),
 			CreatedAt: createdAt.Format("02.01.2006 15:04:05"),

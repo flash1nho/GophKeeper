@@ -23,7 +23,6 @@ type FieldInfo struct {
 func PrintResult(values []*structpb.Value) {
 	for _, secretVal := range values {
 		fields := secretVal.GetStructValue().GetFields()
-		fmt.Println(fields)
 
 		if id, ok := fields["id"]; ok {
 			fmt.Printf("id: %.0f\n", id.GetNumberValue())

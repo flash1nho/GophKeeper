@@ -21,7 +21,6 @@ type File struct {
 
 	FileName        string `json:"file_name"`
 	FileContentType string `json:"file_content_type"`
-	FileSize        int64  `json:"file_size"`
 }
 
 func NewFile(userID int, masterKey []byte, pool *pgxpool.Pool) *File {
