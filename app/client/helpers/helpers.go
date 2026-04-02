@@ -32,7 +32,7 @@ func PrintResult(values []*structpb.Value) {
 			val := fileName.GetStringValue()
 
 			if val != "" {
-				fmt.Printf("file_name: %d\n", val)
+				fmt.Printf("file_name: %s\n", val)
 			}
 		}
 
