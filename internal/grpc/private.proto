@@ -1,0 +1,98 @@
+syntax = "proto3";
+
+package grpc;
+
+import "google/protobuf/struct.proto";
+
+option go_package = "grpc/grpc";
+
+service GophKeeperPrivateService {
+  rpc Create (CreateRequest) returns (CreateResponse);
+  rpc Get (GetRequest) returns (GetResponse);
+  rpc List (ListRequest) returns (ListResponse);
+  rpc Update (UpdateRequest) returns (UpdateResponse);
+  rpc Delete (DeleteRequest) returns (DeleteResponse);
+  rpc GetUploadStatus(UploadStatusRequest) returns (UploadStatusResponse);
+  rpc Upload(stream UploadRequest) returns (UploadResponse);
+  rpc Download(DownloadRequest) returns (stream DownloadResponse);
+}
+
+message CreateRequest {
+  google.protobuf.Struct data = 1;
+  string type = 2;
+}
+
+message CreateResponse {
+  google.protobuf.ListValue secrets = 1;
+}
+
+message GetRequest {
+  int32 id = 1;
+  string type = 2;
+}
+
+message GetResponse {
+  google.protobuf.ListValue secrets = 1;
+}
+
+message ListRequest {
+  string type = 1;
+}
+
+message ListResponse {
+  google.protobuf.ListValue secrets = 1;
+}
+
+message UpdateRequest {
+  int32 id = 1;
+  google.protobuf.Struct data = 2;
+  string type = 3;
+}
+
+message UpdateResponse {
+  google.protobuf.ListValue secrets = 1;
+}
+
+message DeleteRequest {
+  int32 id = 1;
+  string type = 2;
+}
+
+message DeleteResponse {
+}
+
+message UploadRequest {
+  oneof data {
+    Metadata metadata = 1;
+    bytes chunk = 2;
+  }
+}
+
+message Metadata {
+  string file_name = 1;
+  string file_content_type = 2;
+  int64 file_size = 3;
+  int64 file_offset = 4;
+}
+
+message UploadResponse {
+  google.protobuf.ListValue secrets = 1;
+}
+
+message UploadStatusRequest {
+  string file_name = 1;
+}
+
+message UploadStatusResponse {
+  int64 file_offset = 1;
+}
+
+message DownloadRequest {
+  int32 id = 1;
+  int64 file_offset = 2;
+}
+
+message DownloadResponse {
+  bytes chunk = 1;
+  int64 file_offset = 2;
+}

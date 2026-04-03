@@ -1,0 +1,4 @@
+/config/.env
+docker-compose.yml
+/uploads/*
+!/uploads/.gitkeep
